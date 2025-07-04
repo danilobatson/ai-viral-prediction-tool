@@ -1,0 +1,14 @@
+{
+  "name": "ai-viral-prediction-tool",
+  "version": "1.0.0",
+  "description": "AI tool that predicts viral crypto posts with high accuracy",
+  "main": "index.js",
+  "scripts": {
+    "collect": "node scripts/collect_viral_posts.js",
+    "analyze": "node scripts/analyze_patterns.js",
+    "test": "node tests/run_tests.js"
+  },
+  "keywords": ["ai", "crypto", "viral", "prediction", "social-media"],
+  "author": "Danilo Batson",
+  "license": "MIT"
+}
