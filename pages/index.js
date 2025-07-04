@@ -25,13 +25,14 @@ import {
   CardBody,
   useBreakpointValue,
 } from '@chakra-ui/react';
-import { ChevronRight, Sparkles, TrendingUp, Clock, Hash, Users, BarChart3 } from 'lucide-react';
+import { ChevronRight, Sparkles, TrendingUp, Clock, Hash, Users, BarChart3, Layers } from 'lucide-react';
 import ViralPredictor from '../components/ViralPredictor';
 import CreatorLookup from '../components/CreatorLookup';
 import PredictionHistory from '../components/PredictionHistory';
 import HashtagOptimizer from '../components/HashtagOptimizer';
 import TimingOptimizer from '../components/TimingOptimizer';
 import ContentOptimizer from '../components/ContentOptimizer';
+import BatchAnalysis from '../components/BatchAnalysis';
 import { AnalyticsProvider } from '../components/Analytics';
 
 export default function Home() {
@@ -71,7 +72,7 @@ export default function Home() {
       description: 'Trending hashtag analysis',
       color: 'orange',
       component: <HashtagOptimizer />,
-      isNew: true,
+      isNew: false,
     },
     {
       id: 3,
@@ -80,7 +81,7 @@ export default function Home() {
       description: 'Best posting times',
       color: 'cyan',
       component: <TimingOptimizer />,
-      isNew: true,
+      isNew: false,
     },
     {
       id: 4,
@@ -89,312 +90,185 @@ export default function Home() {
       description: 'AI content optimization',
       color: 'pink',
       component: <ContentOptimizer />,
-      isNew: true,
+      isNew: false,
     },
     {
       id: 5,
       icon: BarChart3,
-      title: 'Analytics Dashboard',
-      description: 'Track prediction accuracy',
+      title: 'Analytics & History',
+      description: 'Track your predictions',
       color: 'green',
       component: <PredictionHistory />,
       isNew: false,
     },
+    {
+      id: 6,
+      icon: Layers,
+      title: 'Batch Analysis',
+      description: 'Analyze multiple posts at once',
+      color: 'teal',
+      component: <BatchAnalysis />,
+      isNew: true,
+    },
   ];
 
   return (
-    <>
+    <AnalyticsProvider>
       <ChakraProvider>
-        <AnalyticsProvider>
-          <Box minH="100vh" bg={bgGradient}>
-            <Container maxW="7xl" py={8}>
-              <VStack spacing={12} align="stretch">
-                {/* Hero Section */}
-                <Box textAlign="center">
-                  <VStack spacing={6}>
-                    {/* Main Title */}
-                    <VStack spacing={4}>
-                      <Badge 
-                        colorScheme="purple" 
-                        fontSize="sm" 
-                        px={4} 
-                        py={2} 
-                        borderRadius="full"
-                        textTransform="none"
-                      >
-                        🚀 Powered by LunarCrush MCP + Google Gemini AI
-                      </Badge>
-                      <Heading
-                        size={isMobile ? "xl" : "3xl"}
-                        bgGradient="linear(to-r, blue.500, purple.500, pink.500)"
-                        bgClip="text"
-                        fontWeight="black"
-                        lineHeight="shorter"
-                      >
-                        AI Viral Prediction Suite
-                      </Heading>
-                      <Text 
-                        fontSize={isMobile ? "lg" : "xl"} 
-                        color="gray.600" 
-                        maxW="3xl" 
-                        mx="auto"
-                        lineHeight="tall"
-                      >
-                        The complete toolkit for content creators. Predict viral potential, 
-                        optimize hashtags, find perfect timing, and enhance content with AI.
-                      </Text>
-                    </VStack>
+        <Box minH="100vh" bg={bgGradient}>
+          <Container maxW="7xl" py={8}>
+            <VStack spacing={8}>
+              {/* Header */}
+              <Box textAlign="center">
+                <Heading 
+                  size="2xl" 
+                  bgGradient="linear(to-r, blue.400, purple.500, pink.400)"
+                  bgClip="text"
+                  mb={4}
+                >
+                  🤖 AI Viral Prediction Tool
+                </Heading>
+                <Text fontSize="xl" color="gray.600" maxW="2xl">
+                  Predict viral potential with 99% accuracy using real-time social data and advanced AI analysis
+                </Text>
+                <HStack justify="center" mt={4} spacing={4}>
+                  <Badge colorScheme="green" fontSize="sm" px={3} py={1}>
+                    ✅ Real MCP Data
+                  </Badge>
+                  <Badge colorScheme="purple" fontSize="sm" px={3} py={1}>
+                    🧠 Gemini AI
+                  </Badge>
+                  <Badge colorScheme="blue" fontSize="sm" px={3} py={1}>
+                    📊 7 Tools
+                  </Badge>
+                </HStack>
+              </Box>
 
-                    {/* Key Features */}
-                    <HStack 
-                      justify="center" 
-                      spacing={isMobile ? 2 : 4} 
-                      flexWrap="wrap"
-                      mt={6}
-                    >
-                      <Badge colorScheme="blue" p={2} borderRadius="md">
-                        🔥 99% Accuracy
-                      </Badge>
-                      <Badge colorScheme="purple" p={2} borderRadius="md">
-                        ⚡ Real-time Data
-                      </Badge>
-                      <Badge colorScheme="green" p={2} borderRadius="md">
-                        🤖 AI-Powered
-                      </Badge>
-                      <Badge colorScheme="orange" p={2} borderRadius="md">
-                        📊 Live Analytics
-                      </Badge>
+              {/* Start Here Section */}
+              <Card w="full" bg={cardBg} shadow="lg">
+                <CardBody>
+                  <VStack spacing={4}>
+                    <Heading size="md" color="purple.500">🚀 Start Here</Heading>
+                    <Text textAlign="center" color="gray.600">
+                      New to viral prediction? Start with Creator Analysis or jump straight to Viral Prediction!
+                    </Text>
+                    <HStack spacing={4}>
+                      <Button
+                        colorScheme="blue"
+                        onClick={() => setActiveTab(0)}
+                        leftIcon={<Icon as={Users} />}
+                      >
+                        Analyze Creator
+                      </Button>
+                      <Button
+                        colorScheme="purple"
+                        onClick={() => setActiveTab(1)}
+                        leftIcon={<Icon as={Sparkles} />}
+                      >
+                        Predict Viral
+                      </Button>
                     </HStack>
+                  </VStack>
+                </CardBody>
+              </Card>
 
-                    {/* Quick Start */}
-                    <Box bg="blue.50" p={6} borderRadius="xl" border="2px" borderColor="blue.200" mt={8}>
-                      <VStack spacing={3}>
-                        <Text fontSize="lg" fontWeight="bold" color="blue.700">
-                          ✨ New User? Start Here!
-                        </Text>
-                        <Text fontSize="sm" color="blue.600" textAlign="center">
-                          1. Try Creator Analysis with &ldquo;elonmusk&rdquo; • 2. Predict viral potential of your content • 3. Optimize with AI suggestions
+              {/* Tools Grid */}
+              <Grid 
+                templateColumns={{ 
+                  base: "1fr", 
+                  md: "repeat(2, 1fr)", 
+                  lg: "repeat(3, 1fr)" 
+                }} 
+                gap={6} 
+                w="full"
+              >
+                {tools.map((tool) => (
+                  <Card
+                    key={tool.id}
+                    cursor="pointer"
+                    onClick={() => setActiveTab(tool.id)}
+                    bg={cardBg}
+                    shadow="lg"
+                    _hover={{ 
+                      transform: 'translateY(-4px)', 
+                      shadow: 'xl',
+                      borderColor: `${tool.color}.200`
+                    }}
+                    transition="all 0.3s"
+                    border="2px"
+                    borderColor={activeTab === tool.id ? `${tool.color}.300` : 'transparent'}
+                  >
+                    <CardBody>
+                      <VStack spacing={3} align="center">
+                        <HStack>
+                          <Icon 
+                            as={tool.icon} 
+                            boxSize={6} 
+                            color={`${tool.color}.500`}
+                          />
+                          {tool.isNew && (
+                            <Badge colorScheme="red" size="sm">NEW</Badge>
+                          )}
+                        </HStack>
+                        <Heading size="sm" textAlign="center">
+                          {tool.title}
+                        </Heading>
+                        <Text 
+                          fontSize="sm" 
+                          color="gray.600" 
+                          textAlign="center"
+                        >
+                          {tool.description}
                         </Text>
                         <Button
-                          colorScheme="blue"
-                          size="lg"
-                          rightIcon={<ChevronRight />}
-                          onClick={() => setActiveTab(0)}
+                          size="sm"
+                          colorScheme={tool.color}
+                          variant="ghost"
+                          rightIcon={<ChevronRight size={16} />}
                         >
-                          Start Free Analysis
+                          Open Tool
                         </Button>
                       </VStack>
-                    </Box>
-                  </VStack>
-                </Box>
+                    </CardBody>
+                  </Card>
+                ))}
+              </Grid>
 
-                {/* Tool Selection Grid */}
-                <Box>
-                  <Heading size="lg" mb={6} textAlign="center" color="gray.700">
-                    Choose Your Analysis Tool
-                  </Heading>
-                  
-                  <Grid 
-                    templateColumns={isMobile ? "1fr" : "repeat(3, 1fr)"} 
-                    gap={6} 
-                    mb={8}
+              {/* Active Tool */}
+              <Box w="full">
+                {tools[activeTab]?.component}
+              </Box>
+
+              {/* Footer */}
+              <Box textAlign="center" py={8}>
+                <Text fontSize="sm" color="gray.500">
+                  Powered by{' '}
+                  <Link 
+                    href="https://lunarcrush.com/developers/api" 
+                    isExternal 
+                    color="blue.500"
+                    fontWeight="bold"
                   >
-                    {tools.map((tool) => (
-                      <GridItem key={tool.id}>
-                        <Card
-                          cursor="pointer"
-                          onClick={() => setActiveTab(tool.id)}
-                          bg={activeTab === tool.id ? `${tool.color}.50` : cardBg}
-                          border="2px"
-                          borderColor={activeTab === tool.id ? `${tool.color}.200` : 'gray.200'}
-                          transition="all 0.2s"
-                          _hover={{
-                            transform: 'translateY(-2px)',
-                            shadow: 'lg',
-                            borderColor: `${tool.color}.300`,
-                          }}
-                          position="relative"
-                        >
-                          {tool.isNew && (
-                            <Badge
-                              position="absolute"
-                              top={-2}
-                              right={-2}
-                              colorScheme="red"
-                              borderRadius="full"
-                              fontSize="xs"
-                            >
-                              NEW
-                            </Badge>
-                          )}
-                          <CardBody textAlign="center" p={6}>
-                            <VStack spacing={4}>
-                              <Box
-                                p={4}
-                                bg={`${tool.color}.100`}
-                                borderRadius="full"
-                                color={`${tool.color}.600`}
-                              >
-                                <Icon as={tool.icon} boxSize={8} />
-                              </Box>
-                              <VStack spacing={2}>
-                                <Text fontWeight="bold" fontSize="lg">
-                                  {tool.title}
-                                </Text>
-                                <Text fontSize="sm" color="gray.600">
-                                  {tool.description}
-                                </Text>
-                              </VStack>
-                              {activeTab === tool.id && (
-                                <Badge colorScheme={tool.color} size="sm">
-                                  Active
-                                </Badge>
-                              )}
-                            </VStack>
-                          </CardBody>
-                        </Card>
-                      </GridItem>
-                    ))}
-                  </Grid>
-                </Box>
-
-                {/* Active Tool */}
-                <Box bg={cardBg} borderRadius="2xl" shadow="2xl" p={8}>
-                  <VStack spacing={6} align="stretch">
-                    <Box textAlign="center">
-                      <HStack justify="center" align="center" spacing={3} mb={4}>
-                        <Icon 
-                          as={tools[activeTab].icon} 
-                          boxSize={8} 
-                          color={`${tools[activeTab].color}.500`} 
-                        />
-                        <Heading size="xl" color={`${tools[activeTab].color}.500`}>
-                          {tools[activeTab].title}
-                        </Heading>
-                        {tools[activeTab].isNew && (
-                          <Badge colorScheme="red" borderRadius="full">
-                            NEW
-                          </Badge>
-                        )}
-                      </HStack>
-                      <Text color="gray.600" fontSize="lg">
-                        {tools[activeTab].description}
-                      </Text>
-                    </Box>
-                    
-                    {/* Tool Component */}
-                    <Box>
-                      {tools[activeTab].component}
-                    </Box>
-                  </VStack>
-                </Box>
-
-                {/* MCP Value Proposition */}
-                <Box bg={cardBg} borderRadius="2xl" shadow="lg" p={8}>
-                  <VStack spacing={6}>
-                    <Heading size="xl" textAlign="center" color="purple.500">
-                      🚀 Why LunarCrush MCP is Game-Changing
-                    </Heading>
-                    
-                    <Grid templateColumns={isMobile ? "1fr" : "repeat(3, 1fr)"} gap={8}>
-                      <VStack spacing={4} textAlign="center">
-                        <Box fontSize="4xl">🔄</Box>
-                        <Heading size="md">Live Social Data</Heading>
-                        <Text fontSize="sm" color="gray.600">
-                          Access real-time follower counts, engagement rates, and trending 
-                          hashtags through MCP protocol - not outdated cached data.
-                        </Text>
-                      </VStack>
-                      
-                      <VStack spacing={4} textAlign="center">
-                        <Box fontSize="4xl">🤖</Box>
-                        <Heading size="md">AI-Native Integration</Heading>
-                        <Text fontSize="sm" color="gray.600">
-                          Unlike traditional APIs, MCP enables seamless AI assistant 
-                          integration for intelligent analysis and predictions.
-                        </Text>
-                      </VStack>
-                      
-                      <VStack spacing={4} textAlign="center">
-                        <Box fontSize="4xl">⚡</Box>
-                        <Heading size="md">Developer Friendly</Heading>
-                        <Text fontSize="sm" color="gray.600">
-                          One protocol, multiple data sources, infinite possibilities. 
-                          Build the next generation of AI-powered social tools.
-                        </Text>
-                      </VStack>
-                    </Grid>
-                  </VStack>
-                </Box>
-
-                {/* CTA Section */}
-                <Box 
-                  bg="gradient-to-r" 
-                  bgGradient="linear(to-r, blue.500, purple.500)"
-                  color="white"
-                  borderRadius="2xl" 
-                  p={8} 
-                  textAlign="center"
-                >
-                  <VStack spacing={6}>
-                    <VStack spacing={4}>
-                      <Heading size="xl">Ready to Build Your Own?</Heading>
-                      <Text fontSize="lg" opacity={0.9}>
-                        Join thousands of developers using LunarCrush MCP for AI applications
-                      </Text>
-                    </VStack>
-                    
-                    <HStack spacing={4} justify="center" flexWrap="wrap">
-                      <Button
-                        as={Link}
-                        href="https://lunarcrush.com"
-                        isExternal
-                        size="lg"
-                        colorScheme="whiteAlpha"
-                        variant="solid"
-                        rightIcon={<ChevronRight />}
-                      >
-                        Get FREE API Access
-                      </Button>
-                      <Button
-                        size="lg"
-                        colorScheme="whiteAlpha"
-                        variant="outline"
-                        _hover={{ bg: 'whiteAlpha.200' }}
-                      >
-                        View Documentation
-                      </Button>
-                    </HStack>
-                    
-                    <Text fontSize="sm" opacity={0.8}>
-                      🔥 Limited time: Free tier includes MCP protocol access
-                    </Text>
-                  </VStack>
-                </Box>
-
-                {/* Footer */}
-                <Box textAlign="center" py={4}>
-                  <Text fontSize="sm" color="gray.500">
-                    Powered by{' '}
-                    <Link href="https://lunarcrush.com" color="blue.500" isExternal fontWeight="semibold">
-                      LunarCrush MCP
-                    </Link>
-                    {' • '}
-                    Built with{' '}
-                    <Link href="https://nextjs.org" color="blue.500" isExternal fontWeight="semibold">
-                      Next.js
-                    </Link>
-                    {' & '}
-                    <Link href="https://chakra-ui.com" color="blue.500" isExternal fontWeight="semibold">
-                      Chakra UI
-                    </Link>
-                  </Text>
-                </Box>
-              </VStack>
-            </Container>
-          </Box>
-        </AnalyticsProvider>
+                    LunarCrush MCP
+                  </Link>{' '}
+                  +{' '}
+                  <Link 
+                    href="https://ai.google.dev/gemini-api" 
+                    isExternal 
+                    color="purple.500"
+                    fontWeight="bold"
+                  >
+                    Google Gemini 2.0 Flash Lite
+                  </Link>
+                </Text>
+                <Text fontSize="xs" color="gray.400" mt={2}>
+                  Built for maximum viral potential • Updated July 4, 2025
+                </Text>
+              </Box>
+            </VStack>
+          </Container>
+        </Box>
       </ChakraProvider>
-    </>
+    </AnalyticsProvider>
   );
 }
