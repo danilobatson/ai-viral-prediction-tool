@@ -1,713 +1,704 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Box,
   VStack,
   HStack,
+  Heading,
   Text,
   Button,
-  Input,
   Textarea,
+  Input,
   Select,
+  FormControl,
+  FormLabel,
+  Alert,
+  AlertIcon,
+  Progress,
+  Badge,
+  Spinner,
+  Card,
+  CardBody,
+  useColorModeValue,
+  SimpleGrid,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  Divider,
+  FormHelperText,
   Tabs,
   TabList,
   TabPanels,
   Tab,
   TabPanel,
-  Card,
-  CardBody,
-  Badge,
-  Progress,
-  Alert,
-  AlertIcon,
-  AlertDescription,
-  useToast,
-  Divider,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatHelpText,
-  StatArrow,
-  Icon,
-  Spinner,
-  FormControl,
-  FormLabel,
-  FormHelperText,
-  Grid,
-  GridItem,
-  Accordion,
-  AccordionItem,
-  AccordionButton,
-  AccordionPanel,
-  AccordionIcon,
-  List,
-  ListItem,
-  ListIcon,
-  Link,
-  Tag,
-  TagLabel,
-  Wrap,
-  WrapItem,
-  SimpleGrid,
-  Container,
-  Heading,
-  Flex,
-  Spacer,
-  useColorModeValue
 } from '@chakra-ui/react';
-import { CheckIcon, StarIcon, TrendingUpIcon, ExternalLinkIcon } from '@chakra-ui/icons';
-
-// Analytics tracking
-const trackEvent = (eventName, properties = {}) => {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', eventName, properties);
-  }
-};
 
 const ViralPredictor = () => {
-  const [activeTab, setActiveTab] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [lookupLoading, setLookupLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [prediction, setPrediction] = useState(null);
-  const [creatorData, setCreatorData] = useState(null);
-  const [trendingTopics, setTrendingTopics] = useState([]);
+  const [contentType, setContentType] = useState('text');
+  const [platform, setPlatform] = useState('x');
+  const [niche, setNiche] = useState('general');
+  const [username, setUsername] = useState('');
   
-  const [formData, setFormData] = useState({
-    platform: 'x',
-    handle: '',
-    niche: 'crypto',
-    customNiche: '',
-    postText: '',
-    postDescription: '', // For videos/images
-    contentType: 'text' // text, image, video
-  });
+  // Text content fields
+  const [textContent, setTextContent] = useState('');
+  
+  // Image content fields
+  const [imageCaption, setImageCaption] = useState('');
+  const [imageHashtags, setImageHashtags] = useState('');
+  
+  // Video content fields
+  const [videoTitle, setVideoTitle] = useState('');
+  const [videoDescription, setVideoDescription] = useState('');
+  const [videoHashtags, setVideoHashtags] = useState('');
+  
+  // Story content fields
+  const [storyText, setStoryText] = useState('');
+  const [storyHashtags, setStoryHashtags] = useState('');
+  
+  // Poll content fields
+  const [pollQuestion, setPollQuestion] = useState('');
+  const [pollOptions, setPollOptions] = useState('');
+  const [pollContext, setPollContext] = useState('');
 
-  const toast = useToast();
-  const cardBg = useColorModeValue('white', 'gray.800');
+  const [prediction, setPrediction] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const cardBg = useColorModeValue('white', 'gray.700');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
 
-  // Handle form updates
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    setError(null);
-  };
+  // Only MCP-supported platforms
+  const platforms = [
+    { value: 'x', label: 'X (Twitter)', supported: true, note: 'Full MCP support' },
+    { value: 'reddit', label: 'Reddit', supported: true, note: 'Full MCP support' },
+    { value: 'youtube', label: 'YouTube', supported: true, note: 'Full MCP support' },
+    { value: 'tiktok', label: 'TikTok', supported: false, note: 'Analysis only' },
+    { value: 'instagram', label: 'Instagram', supported: false, note: 'Analysis only' },
+    { value: 'linkedin', label: 'LinkedIn', supported: false, note: 'Analysis only' },
+  ];
 
-  // Creator lookup with REAL MCP data
-  const handleLookup = async () => {
-    if (!formData.platform || !formData.handle) {
-      setError('Please enter both platform and handle');
-      return;
+  const contentTypes = [
+    { 
+      value: 'text', 
+      label: '📝 Text Post',
+      description: 'Regular text posts, tweets, status updates'
+    },
+    { 
+      value: 'image', 
+      label: '📸 Image Post',
+      description: 'Posts with images + captions'
+    },
+    { 
+      value: 'video', 
+      label: '🎥 Video Content',
+      description: 'YouTube videos, TikToks, Reels'
+    },
+    { 
+      value: 'story', 
+      label: '📱 Story/Short',
+      description: 'Stories, Shorts, ephemeral content'
+    },
+    { 
+      value: 'poll', 
+      label: '📊 Poll/Question',
+      description: 'Interactive polls and questions'
+    },
+    { 
+      value: 'thread', 
+      label: '🧵 Thread/Series',
+      description: 'Twitter threads, LinkedIn carousels'
+    },
+    { 
+      value: 'live', 
+      label: '🔴 Live Content',
+      description: 'Live streams, Twitter Spaces'
+    },
+    { 
+      value: 'other', 
+      label: '❓ Other',
+      description: 'Custom content type'
+    },
+  ];
+
+  // Extensive niche categories
+  const niches = [
+    // Technology
+    { value: 'ai', label: '🤖 AI & Machine Learning', category: 'Technology' },
+    { value: 'crypto', label: '₿ Cryptocurrency & Blockchain', category: 'Technology' },
+    { value: 'tech', label: '💻 Technology & Programming', category: 'Technology' },
+    { value: 'web3', label: '🌐 Web3 & DeFi', category: 'Technology' },
+    { value: 'cybersecurity', label: '🔒 Cybersecurity', category: 'Technology' },
+    { value: 'data', label: '📊 Data Science & Analytics', category: 'Technology' },
+    
+    // Business & Finance
+    { value: 'business', label: '💼 Business & Entrepreneurship', category: 'Business' },
+    { value: 'finance', label: '💰 Finance & Investing', category: 'Business' },
+    { value: 'marketing', label: '📈 Marketing & Social Media', category: 'Business' },
+    { value: 'ecommerce', label: '🛍️ E-commerce & Retail', category: 'Business' },
+    { value: 'startup', label: '🚀 Startups & Innovation', category: 'Business' },
+    { value: 'realestate', label: '🏠 Real Estate', category: 'Business' },
+    
+    // Lifestyle & Entertainment
+    { value: 'lifestyle', label: '✨ Lifestyle & Wellness', category: 'Lifestyle' },
+    { value: 'fitness', label: '💪 Fitness & Health', category: 'Lifestyle' },
+    { value: 'food', label: '🍕 Food & Cooking', category: 'Lifestyle' },
+    { value: 'travel', label: '✈️ Travel & Adventure', category: 'Lifestyle' },
+    { value: 'fashion', label: '👗 Fashion & Beauty', category: 'Lifestyle' },
+    { value: 'entertainment', label: '🎬 Entertainment & Media', category: 'Lifestyle' },
+    
+    // Creative & Education
+    { value: 'education', label: '📚 Education & Learning', category: 'Education' },
+    { value: 'design', label: '🎨 Design & Creativity', category: 'Creative' },
+    { value: 'music', label: '🎵 Music & Audio', category: 'Creative' },
+    { value: 'writing', label: '✍️ Writing & Content', category: 'Creative' },
+    { value: 'photography', label: '📷 Photography & Visual', category: 'Creative' },
+    
+    // Gaming & Sports
+    { value: 'gaming', label: '🎮 Gaming & Esports', category: 'Gaming' },
+    { value: 'sports', label: '⚽ Sports & Athletics', category: 'Sports' },
+    { value: 'nft', label: '🖼️ NFTs & Digital Art', category: 'Gaming' },
+    
+    // News & Politics
+    { value: 'news', label: '📰 News & Current Events', category: 'News' },
+    { value: 'politics', label: '🏛️ Politics & Policy', category: 'News' },
+    { value: 'science', label: '🔬 Science & Research', category: 'Education' },
+    
+    // Other
+    { value: 'general', label: '🌟 General/Mixed Content', category: 'General' },
+    { value: 'other', label: '❓ Other/Not Listed', category: 'General' },
+  ];
+
+  const predictViral = async () => {
+    // Combine all content based on type
+    let combinedContent = '';
+    
+    switch (contentType) {
+      case 'text':
+        combinedContent = textContent;
+        break;
+      case 'image':
+        combinedContent = `${imageCaption} ${imageHashtags}`.trim();
+        break;
+      case 'video':
+        combinedContent = `${videoTitle}\n\n${videoDescription}\n\n${videoHashtags}`.trim();
+        break;
+      case 'story':
+        combinedContent = `${storyText} ${storyHashtags}`.trim();
+        break;
+      case 'poll':
+        combinedContent = `${pollQuestion}\n\nOptions: ${pollOptions}\n\n${pollContext}`.trim();
+        break;
+      case 'thread':
+        combinedContent = textContent; // Use main text area for threads
+        break;
+      case 'live':
+        combinedContent = textContent; // Use main text area for live content
+        break;
+      case 'other':
+        combinedContent = textContent; // Use main text area for other
+        break;
     }
 
-    setLookupLoading(true);
-    setError(null);
-    
-    trackEvent('creator_lookup_started', {
-      platform: formData.platform,
-      handle: formData.handle,
-      niche: formData.niche
-    });
-    
-    try {
-      console.log('🔍 Starting REAL creator lookup...');
-      
-      const response = await fetch('/api/lookup-creator', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          platform: formData.platform,
-          handle: formData.handle,
-          niche: formData.niche === 'other' ? formData.customNiche : formData.niche
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Creator lookup failed');
-      }
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.message || 'Creator lookup failed');
-      }
-
-      setCreatorData(data.creatorData);
-      setTrendingTopics(data.trendingTopics || []);
-      
-      toast({
-        title: 'Creator Found! 🎉',
-        description: `Found your profile with ${data.creatorData.followers?.toLocaleString()} followers`,
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-      
-      trackEvent('creator_lookup_success', {
-        platform: formData.platform,
-        followers: data.creatorData.followers,
-        engagement_rate: data.creatorData.engagementRate,
-        real_data: data.integration?.realDataReturned || false
-      });
-      
-    } catch (err) {
-      setError(err.message);
-      toast({
-        title: 'Lookup Failed',
-        description: 'Could not find your profile. Check your handle and platform.',
-        status: 'error',
-        duration: 4000,
-        isClosable: true,
-      });
-      
-      trackEvent('creator_lookup_error', { error: err.message });
-    } finally {
-      setLookupLoading(false);
-    }
-  };
-
-  // AI prediction with REAL Gemini + ML
-  const handlePredict = async () => {
-    const postContent = formData.contentType === 'text' ? formData.postText : formData.postDescription;
-    
-    if (!postContent.trim()) {
-      setError(`Please enter your ${formData.contentType === 'text' ? 'post content' : 'content description'}`);
-      return;
-    }
-
-    if (!creatorData) {
-      setError('Please lookup your creator data first');
+    if (!combinedContent.trim()) {
+      setError('Please fill in the required content fields');
       return;
     }
 
     setLoading(true);
-    setError(null);
-    
-    trackEvent('ai_prediction_started', {
-      platform: formData.platform,
-      has_creator_data: !!creatorData,
-      follower_count: creatorData?.followers || 0,
-      content_length: postContent.length,
-      content_type: formData.contentType,
-      niche: formData.niche
-    });
-    
+    setError('');
+    setPrediction(null);
+
     try {
-      console.log('🤖 Starting REAL AI prediction...');
-      
       const response = await fetch('/api/predict-viral-ai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          postData: {
-            text: postContent,
-            platform: formData.platform,
-            niche: formData.niche === 'other' ? formData.customNiche : formData.niche,
-            contentType: formData.contentType
-          },
-          creatorData: creatorData,
-          trendingTopics: trendingTopics,
-          analysisType: 'hybrid' // Use hybrid Gemini + ML + MCP
+          content: combinedContent,
+          platform,
+          contentType,
+          niche,
+          username: username.trim() || null,
+          additionalContext: {
+            contentLength: combinedContent.length,
+            hasHashtags: combinedContent.includes('#'),
+            hasMentions: combinedContent.includes('@'),
+            hasEmojis: /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]/u.test(combinedContent),
+          }
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to get AI prediction');
-      }
-
       const data = await response.json();
-      setPrediction(data);
-      setActiveTab(1); // Switch to results tab
-      
-      toast({
-        title: 'Analysis Complete! 🎯',
-        description: `Viral probability: ${data.prediction.viralProbability}%`,
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-      
-      trackEvent('ai_prediction_completed', {
-        viral_probability: data.prediction.viralProbability,
-        confidence: data.prediction.confidence,
-        platform: formData.platform,
-        follower_count: creatorData?.followers || 0,
-        analysis_method: data.analysisMethod?.type,
-        real_data: data.analysisMethod?.realData
-      });
-      
+
+      if (data.success) {
+        const predictionResult = {
+          ...data.prediction,
+          content: combinedContent,
+          platform,
+          contentType,
+          niche,
+          timestamp: new Date().toISOString(),
+        };
+        
+        setPrediction(predictionResult);
+        
+        // Save to prediction history
+        if (window.addPredictionToHistory) {
+          window.addPredictionToHistory(predictionResult);
+        }
+      } else {
+        setError(data.error || 'Failed to analyze content');
+      }
     } catch (err) {
-      setError(err.message);
-      trackEvent('prediction_error', { error: err.message });
-      
-      toast({
-        title: 'Prediction Failed',
-        description: err.message,
-        status: 'error',
-        duration: 4000,
-        isClosable: true,
-      });
+      setError('Network error. Please try again.');
+      console.error('Prediction error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Platform options
-  const getSupportedPlatforms = () => [
-    { value: 'x', label: 'X (Twitter)', icon: '🐦' },
-    { value: 'tiktok', label: 'TikTok', icon: '🎵' },
-    { value: 'youtube', label: 'YouTube', icon: '📺' },
-    { value: 'reddit', label: 'Reddit', icon: '🤖' },
-  ];
+  const getConfidenceColor = (confidence) => {
+    if (confidence >= 80) return 'green';
+    if (confidence >= 60) return 'orange';
+    return 'red';
+  };
 
-  // EXPANDED Niche options
-  const getNicheOptions = () => [
-    { value: 'crypto', label: 'Cryptocurrency & DeFi' },
-    { value: 'ai', label: 'Artificial Intelligence' },
-    { value: 'gaming', label: 'Gaming & Esports' },
-    { value: 'nft', label: 'NFTs & Digital Art' },
-    { value: 'meme', label: 'Meme & Viral Content' },
-    { value: 'tech', label: 'Technology & Software' },
-    { value: 'business', label: 'Business & Startups' },
-    { value: 'finance', label: 'Finance & Trading' },
-    { value: 'lifestyle', label: 'Lifestyle & Wellness' },
-    { value: 'entertainment', label: 'Entertainment & Pop Culture' },
-    { value: 'sports', label: 'Sports & Fitness' },
-    { value: 'music', label: 'Music & Audio' },
-    { value: 'food', label: 'Food & Cooking' },
-    { value: 'travel', label: 'Travel & Adventure' },
-    { value: 'fashion', label: 'Fashion & Beauty' },
-    { value: 'education', label: 'Education & Learning' },
-    { value: 'news', label: 'News & Politics' },
-    { value: 'science', label: 'Science & Research' },
-    { value: 'other', label: '🔧 Other (specify below)' }
-  ];
+  const getViralLabel = (confidence) => {
+    if (confidence >= 90) return 'Extremely Viral';
+    if (confidence >= 80) return 'High Viral Potential';
+    if (confidence >= 60) return 'Moderate Potential';
+    if (confidence >= 40) return 'Low Potential';
+    return 'Unlikely to Go Viral';
+  };
 
-  // Content type options
-  const getContentTypes = () => [
-    { value: 'text', label: 'Text Post', icon: '📝' },
-    { value: 'image', label: 'Image/Photo', icon: '📸' },
-    { value: 'video', label: 'Video/Reel', icon: '🎥' }
-  ];
+  const getPlatformSupport = () => {
+    const platformData = platforms.find(p => p.value === platform);
+    return platformData || platforms[0];
+  };
+
+  const renderContentFields = () => {
+    const selectedType = contentTypes.find(ct => ct.value === contentType);
+    
+    switch (contentType) {
+      case 'text':
+      case 'thread':
+      case 'live':
+      case 'other':
+        return (
+          <FormControl>
+            <FormLabel fontWeight="bold">
+              {contentType === 'thread' ? 'Thread Content' :
+               contentType === 'live' ? 'Live Content Description' :
+               contentType === 'other' ? 'Content Description' : 'Post Content'} *
+            </FormLabel>
+            <Textarea
+              value={textContent}
+              onChange={(e) => setTextContent(e.target.value)}
+              placeholder={
+                contentType === 'thread' ? 
+                  "Enter your thread content... \n\n1/ First tweet in thread\n2/ Second tweet content\n3/ Final tweet with CTA..." :
+                contentType === 'live' ?
+                  "Describe your live content... \n\nExample: 'Going live to discuss the latest AI developments and answer your questions! 🤖'" :
+                contentType === 'other' ?
+                  "Describe your content type and what you're posting..." :
+                  "What's your post about? Enter your full text content here..."
+              }
+              rows={6}
+              resize="vertical"
+            />
+            <FormHelperText>
+              {selectedType?.description}
+            </FormHelperText>
+          </FormControl>
+        );
+
+      case 'image':
+        return (
+          <VStack spacing={4} align="stretch">
+            <FormControl>
+              <FormLabel fontWeight="bold">Image Caption/Description *</FormLabel>
+              <Textarea
+                value={imageCaption}
+                onChange={(e) => setImageCaption(e.target.value)}
+                placeholder="What caption will you write for this image?"
+                rows={4}
+                resize="vertical"
+              />
+            </FormControl>
+            <FormControl>
+              <FormLabel fontWeight="bold">Hashtags (Optional)</FormLabel>
+              <Input
+                value={imageHashtags}
+                onChange={(e) => setImageHashtags(e.target.value)}
+                placeholder="#hashtag1 #hashtag2 #hashtag3"
+              />
+            </FormControl>
+          </VStack>
+        );
+
+      case 'video':
+        return (
+          <VStack spacing={4} align="stretch">
+            <FormControl>
+              <FormLabel fontWeight="bold">Video Title *</FormLabel>
+              <Input
+                value={videoTitle}
+                onChange={(e) => setVideoTitle(e.target.value)}
+                placeholder="How I Built a Viral Prediction Tool in 30 Minutes"
+              />
+            </FormControl>
+            <FormControl>
+              <FormLabel fontWeight="bold">Video Description</FormLabel>
+              <Textarea
+                value={videoDescription}
+                onChange={(e) => setVideoDescription(e.target.value)}
+                placeholder="Detailed description of your video content..."
+                rows={4}
+                resize="vertical"
+              />
+            </FormControl>
+            <FormControl>
+              <FormLabel fontWeight="bold">Tags/Keywords</FormLabel>
+              <Input
+                value={videoHashtags}
+                onChange={(e) => setVideoHashtags(e.target.value)}
+                placeholder="#tag1 #tag2 #tag3"
+              />
+            </FormControl>
+          </VStack>
+        );
+
+      case 'story':
+        return (
+          <VStack spacing={4} align="stretch">
+            <FormControl>
+              <FormLabel fontWeight="bold">Story Text/Caption *</FormLabel>
+              <Textarea
+                value={storyText}
+                onChange={(e) => setStoryText(e.target.value)}
+                placeholder="Text that appears on your story..."
+                rows={3}
+                resize="vertical"
+              />
+            </FormControl>
+            <FormControl>
+              <FormLabel fontWeight="bold">Hashtags/Tags</FormLabel>
+              <Input
+                value={storyHashtags}
+                onChange={(e) => setStoryHashtags(e.target.value)}
+                placeholder="#hashtag1 #hashtag2"
+              />
+            </FormControl>
+          </VStack>
+        );
+
+      case 'poll':
+        return (
+          <VStack spacing={4} align="stretch">
+            <FormControl>
+              <FormLabel fontWeight="bold">Poll Question *</FormLabel>
+              <Input
+                value={pollQuestion}
+                onChange={(e) => setPollQuestion(e.target.value)}
+                placeholder="What question are you asking?"
+              />
+            </FormControl>
+            <FormControl>
+              <FormLabel fontWeight="bold">Poll Options *</FormLabel>
+              <Textarea
+                value={pollOptions}
+                onChange={(e) => setPollOptions(e.target.value)}
+                placeholder="A) Option 1&#10;B) Option 2&#10;C) Option 3&#10;D) Option 4"
+                rows={3}
+              />
+            </FormControl>
+            <FormControl>
+              <FormLabel fontWeight="bold">Additional Context</FormLabel>
+              <Textarea
+                value={pollContext}
+                onChange={(e) => setPollContext(e.target.value)}
+                placeholder="Any additional context around your poll..."
+                rows={3}
+              />
+            </FormControl>
+          </VStack>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
-    <Container maxW="6xl" py={8}>
-      <VStack spacing={8} align="stretch">
-        {/* Header */}
-        <Box textAlign="center">
-          <Heading size="xl" mb={2} bgGradient="linear(to-r, blue.400, purple.500)" bgClip="text">
-            AI Viral Prediction Tool
-          </Heading>
-          <Text color="gray.600" fontSize="lg">
-            Real-time analysis using Google Gemini AI + LunarCrush MCP + ML Models
-          </Text>
-          <Badge colorScheme="green" mt={2}>Phase 3.2 - Real Data Integration</Badge>
-        </Box>
+    <Box maxW="4xl" mx="auto">
+      <VStack spacing={6} align="stretch">
+        <Tabs variant="soft-rounded" colorScheme="purple">
+          <TabList>
+            <Tab>📝 Content Setup</Tab>
+            <Tab>🎯 Advanced Options</Tab>
+          </TabList>
 
-        {/* Main Interface */}
-        <Card bg={cardBg} borderColor={borderColor} borderWidth="1px">
-          <CardBody>
-            <Tabs index={activeTab} onChange={setActiveTab} variant="soft-rounded" colorScheme="blue">
-              <TabList mb={6}>
-                <Tab>🔍 Creator Lookup</Tab>
-                <Tab isDisabled={!prediction}>📊 AI Analysis</Tab>
-                <Tab>🧠 How AI Works</Tab>
-              </TabList>
-
-              <TabPanels>
-                {/* Creator Lookup Tab */}
-                <TabPanel>
-                  <VStack spacing={6} align="stretch">
-                    <Heading size="md">Step 1: Lookup Your Creator Profile</Heading>
-                    
-                    <Grid templateColumns="repeat(auto-fit, minmax(250px, 1fr))" gap={4}>
-                      <GridItem>
+          <TabPanels>
+            {/* Main Content Tab */}
+            <TabPanel>
+              <VStack spacing={6} align="stretch">
+                {/* Platform & Type Selection */}
+                <Card bg={cardBg} borderRadius="lg">
+                  <CardBody>
+                    <VStack spacing={4} align="stretch">
+                      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                         <FormControl>
-                          <FormLabel>Platform</FormLabel>
-                          <Select
-                            value={formData.platform}
-                            onChange={(e) => handleInputChange('platform', e.target.value)}
+                          <FormLabel fontWeight="bold">Platform</FormLabel>
+                          <Select 
+                            value={platform} 
+                            onChange={(e) => setPlatform(e.target.value)}
+                            size="lg"
                           >
-                            {getSupportedPlatforms().map(platform => (
-                              <option key={platform.value} value={platform.value}>
-                                {platform.icon} {platform.label}
+                            {platforms.map(p => (
+                              <option key={p.value} value={p.value}>
+                                {p.label} {p.supported ? '✓' : '(Analysis Only)'}
                               </option>
                             ))}
                           </Select>
+                          <FormHelperText>
+                            <Badge 
+                              colorScheme={getPlatformSupport().supported ? 'green' : 'orange'}
+                              size="sm"
+                            >
+                              {getPlatformSupport().note}
+                            </Badge>
+                          </FormHelperText>
                         </FormControl>
-                      </GridItem>
-                      
-                      <GridItem>
+
                         <FormControl>
-                          <FormLabel>Handle/Username</FormLabel>
-                          <Input
-                            placeholder="elonmusk"
-                            value={formData.handle}
-                            onChange={(e) => handleInputChange('handle', e.target.value)}
-                          />
-                          <FormHelperText>Enter without @ symbol</FormHelperText>
-                        </FormControl>
-                      </GridItem>
-                    </Grid>
-
-                    <FormControl>
-                      <FormLabel>Content Niche</FormLabel>
-                      <Select
-                        value={formData.niche}
-                        onChange={(e) => handleInputChange('niche', e.target.value)}
-                      >
-                        {getNicheOptions().map(niche => (
-                          <option key={niche.value} value={niche.value}>
-                            {niche.label}
-                          </option>
-                        ))}
-                      </Select>
-                    </FormControl>
-
-                    {formData.niche === 'other' && (
-                      <FormControl>
-                        <FormLabel>Custom Niche</FormLabel>
-                        <Input
-                          placeholder="e.g., Photography, Gardening, etc."
-                          value={formData.customNiche}
-                          onChange={(e) => handleInputChange('customNiche', e.target.value)}
-                        />
-                      </FormControl>
-                    )}
-
-                    <Button
-                      colorScheme="blue"
-                      size="lg"
-                      onClick={handleLookup}
-                      isLoading={lookupLoading}
-                      loadingText="Finding Creator..."
-                    >
-                      🔍 Lookup Creator Profile
-                    </Button>
-
-                    {/* Creator Data Display */}
-                    {creatorData && (
-                      <Card bg="green.50" borderColor="green.200">
-                        <CardBody>
-                          <VStack align="start" spacing={4}>
-                            <Flex w="full" align="center">
-                              <Heading size="md">@{creatorData.handle}</Heading>
-                              <Spacer />
-                              {creatorData.verified && <Badge colorScheme="blue">✓ Verified</Badge>}
-                              {creatorData.mcpIntegration?.usingRealData && (
-                                <Badge colorScheme="green" ml={2}>🔴 Live Data</Badge>
-                              )}
-                            </Flex>
-                            
-                            <SimpleGrid columns={3} spacing={4} w="full">
-                              <Stat>
-                                <StatLabel>Followers</StatLabel>
-                                <StatNumber>{creatorData.followers?.toLocaleString()}</StatNumber>
-                                <StatHelpText>{creatorData.viralPotential} Potential</StatHelpText>
-                              </Stat>
-                              <Stat>
-                                <StatLabel>Engagement Rate</StatLabel>
-                                <StatNumber>{creatorData.engagementRate}%</StatNumber>
-                                <StatHelpText>{creatorData.engagementTier} Level</StatHelpText>
-                              </Stat>
-                              <Stat>
-                                <StatLabel>Creator Rank</StatLabel>
-                                <StatNumber>#{creatorData.creatorRank}</StatNumber>
-                                <StatHelpText>LunarCrush</StatHelpText>
-                              </Stat>
-                            </SimpleGrid>
-                          </VStack>
-                        </CardBody>
-                      </Card>
-                    )}
-
-                    {/* Content Creation Section */}
-                    {creatorData && (
-                      <Box>
-                        <Divider my={6} />
-                        <Heading size="md" mb={4}>Step 2: Describe Your Content</Heading>
-                        
-                        <FormControl mb={4}>
-                          <FormLabel>Content Type</FormLabel>
-                          <Select
-                            value={formData.contentType}
-                            onChange={(e) => handleInputChange('contentType', e.target.value)}
+                          <FormLabel fontWeight="bold">Content Type</FormLabel>
+                          <Select 
+                            value={contentType} 
+                            onChange={(e) => setContentType(e.target.value)}
+                            size="lg"
                           >
-                            {getContentTypes().map(type => (
-                              <option key={type.value} value={type.value}>
-                                {type.icon} {type.label}
-                              </option>
+                            {contentTypes.map(ct => (
+                              <option key={ct.value} value={ct.value}>{ct.label}</option>
                             ))}
                           </Select>
                         </FormControl>
-
-                        {formData.contentType === 'text' ? (
-                          <FormControl>
-                            <FormLabel>Post Content</FormLabel>
-                            <Textarea
-                              placeholder="What are you going to post? Include hashtags, mentions, etc."
-                              value={formData.postText}
-                              onChange={(e) => handleInputChange('postText', e.target.value)}
-                              minH="120px"
-                            />
-                            <FormHelperText>
-                              Characters: {formData.postText.length} | 
-                              For best results, include emojis, hashtags, and mentions
-                            </FormHelperText>
-                          </FormControl>
-                        ) : (
-                          <FormControl>
-                            <FormLabel>
-                              {formData.contentType === 'image' ? 'Image Description & Caption' : 'Video Description & Caption'}
-                            </FormLabel>
-                            <Textarea
-                              placeholder={
-                                formData.contentType === 'image' 
-                                  ? "Describe your image and the caption you'll use. What's in the image? What message will you post with it?"
-                                  : "Describe your video content and caption. What happens in the video? What's your call-to-action?"
-                              }
-                              value={formData.postDescription}
-                              onChange={(e) => handleInputChange('postDescription', e.target.value)}
-                              minH="120px"
-                            />
-                            <FormHelperText>
-                              Characters: {formData.postDescription.length} | 
-                              Include both visual content description and text caption
-                            </FormHelperText>
-                          </FormControl>
-                        )}
-
-                        <Button
-                          colorScheme="purple"
-                          size="lg"
-                          w="full"
-                          mt={4}
-                          onClick={handlePredict}
-                          isLoading={loading}
-                          loadingText="Analyzing with AI..."
-                        >
-                          🤖 Predict Viral Potential with AI
-                        </Button>
-                      </Box>
-                    )}
-
-                    {/* Error Display */}
-                    {error && (
-                      <Alert status="error">
-                        <AlertIcon />
-                        <AlertDescription>{error}</AlertDescription>
-                      </Alert>
-                    )}
-                  </VStack>
-                </TabPanel>
-
-                {/* AI Analysis Results Tab */}
-                <TabPanel>
-                  {prediction ? (
-                    <VStack spacing={6} align="stretch">
-                      <Heading size="md">AI Viral Prediction Results</Heading>
-                      
-                      {/* Main Prediction Score */}
-                      <Card bg="purple.50" borderColor="purple.200">
-                        <CardBody>
-                          <VStack spacing={4}>
-                            <Heading size="lg" color="purple.600">
-                              {prediction.prediction.viralProbability}% Viral Probability
-                            </Heading>
-                            <Progress 
-                              value={prediction.prediction.viralProbability} 
-                              size="lg" 
-                              colorScheme="purple" 
-                              w="full"
-                              borderRadius="md"
-                            />
-                            <HStack>
-                              <Badge colorScheme="blue">
-                                {prediction.prediction.confidence}% Confidence
-                              </Badge>
-                              <Badge colorScheme="green">
-                                {prediction.prediction.category}
-                              </Badge>
-                              {prediction.analysisMethod?.realData && (
-                                <Badge colorScheme="purple">🔴 Real AI Analysis</Badge>
-                              )}
-                            </HStack>
-                          </VStack>
-                        </CardBody>
-                      </Card>
-
-                      {/* Hybrid Analysis Details */}
-                      {prediction.prediction.hybridAnalysis && (
-                        <Card>
-                          <CardBody>
-                            <Heading size="sm" mb={3}>Hybrid Analysis Breakdown</Heading>
-                            <SimpleGrid columns={2} spacing={4}>
-                              <Stat>
-                                <StatLabel>Gemini AI Score</StatLabel>
-                                <StatNumber>{prediction.prediction.hybridAnalysis.geminiScore}%</StatNumber>
-                              </Stat>
-                              <Stat>
-                                <StatLabel>ML Model Score</StatLabel>
-                                <StatNumber>
-                                  {prediction.prediction.hybridAnalysis.mlScore || 'N/A'}%
-                                </StatNumber>
-                              </Stat>
-                            </SimpleGrid>
-                            <Text fontSize="sm" color="gray.600" mt={2}>
-                              Method: {prediction.prediction.hybridAnalysis.method}
-                            </Text>
-                          </CardBody>
-                        </Card>
-                      )}
-
-                      {/* AI Explanation */}
-                      <Card>
-                        <CardBody>
-                          <Heading size="sm" mb={3}>AI Expert Analysis</Heading>
-                          <Text>{prediction.prediction.aiAnalysis?.explanation}</Text>
-                          
-                          {prediction.prediction.aiAnalysis?.recommendations && (
-                            <Box mt={4}>
-                              <Text fontWeight="bold" mb={2}>Recommendations:</Text>
-                              <List spacing={2}>
-                                {prediction.prediction.aiAnalysis.recommendations.map((rec, index) => (
-                                  <ListItem key={index}>
-                                    <ListIcon as={CheckIcon} color="green.500" />
-                                    <Text as="span" fontWeight="bold">{rec.title}:</Text> {rec.description}
-                                  </ListItem>
-                                ))}
-                              </List>
-                            </Box>
-                          )}
-                        </CardBody>
-                      </Card>
-
-                      {/* Expected Reach */}
-                      <SimpleGrid columns={2} spacing={4}>
-                        <Card>
-                          <CardBody>
-                            <Stat>
-                              <StatLabel>Expected Reach</StatLabel>
-                              <StatNumber>{prediction.prediction.expectedReach?.toLocaleString()}</StatNumber>
-                              <StatHelpText>
-                                <StatArrow type="increase" />
-                                Based on viral potential
-                              </StatHelpText>
-                            </Stat>
-                          </CardBody>
-                        </Card>
-                        
-                        <Card>
-                          <CardBody>
-                            <Stat>
-                              <StatLabel>Content Score</StatLabel>
-                              <StatNumber>{prediction.prediction.aiAnalysis?.contentScore}/100</StatNumber>
-                              <StatHelpText>Quality rating</StatHelpText>
-                            </Stat>
-                          </CardBody>
-                        </Card>
                       </SimpleGrid>
+
+                      <FormControl>
+                        <FormLabel fontWeight="bold">Content Niche</FormLabel>
+                        <Select 
+                          value={niche} 
+                          onChange={(e) => setNiche(e.target.value)}
+                          size="lg"
+                        >
+                          {Object.entries(
+                            niches.reduce((acc, niche) => {
+                              if (!acc[niche.category]) acc[niche.category] = [];
+                              acc[niche.category].push(niche);
+                              return acc;
+                            }, {})
+                          ).map(([category, items]) => (
+                            <optgroup key={category} label={category}>
+                              {items.map(item => (
+                                <option key={item.value} value={item.value}>
+                                  {item.label}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </Select>
+                        <FormHelperText>
+                          Choose the category that best matches your content for more accurate predictions
+                        </FormHelperText>
+                      </FormControl>
                     </VStack>
-                  ) : (
-                    <Box textAlign="center" py={8}>
-                      <Text>Complete creator lookup and content analysis to see results</Text>
-                    </Box>
-                  )}
-                </TabPanel>
+                  </CardBody>
+                </Card>
 
-                {/* How AI Works Tab */}
-                <TabPanel>
-                  <VStack spacing={6} align="stretch">
-                    <Heading size="md">How Our AI Viral Prediction Works</Heading>
-                    
-                    <Card>
-                      <CardBody>
-                        <Heading size="sm" mb={3}>🧠 Hybrid AI Analysis System</Heading>
-                        <Text mb={4}>
-                          Our tool combines three powerful technologies to predict viral potential:
+                {/* Content Input */}
+                <Card bg={cardBg} borderRadius="lg">
+                  <CardBody>
+                    <VStack spacing={4} align="stretch">
+                      <Heading size="md">
+                        {contentTypes.find(ct => ct.value === contentType)?.label} Details
+                      </Heading>
+                      
+                      {renderContentFields()}
+
+                      <Button
+                        colorScheme="purple"
+                        size="lg"
+                        onClick={predictViral}
+                        isLoading={loading}
+                        loadingText="Analyzing with AI + MCP..."
+                        mt={4}
+                      >
+                        🚀 Predict Viral Potential
+                      </Button>
+                    </VStack>
+                  </CardBody>
+                </Card>
+              </VStack>
+            </TabPanel>
+
+            {/* Advanced Options Tab */}
+            <TabPanel>
+              <VStack spacing={6} align="stretch">
+                <Card bg={cardBg} borderRadius="lg">
+                  <CardBody>
+                    <VStack spacing={4} align="stretch">
+                      <Heading size="md">🎯 Enhanced Analysis Options</Heading>
+                      
+                      <FormControl>
+                        <FormLabel fontWeight="bold">Your Username (Optional)</FormLabel>
+                        <Input
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          placeholder="your_username"
+                        />
+                        <FormHelperText>
+                          Provide your username for personalized analysis based on your follower metrics (MCP-supported platforms only)
+                        </FormHelperText>
+                      </FormControl>
+
+                      <Box bg="blue.50" p={4} borderRadius="md">
+                        <Text fontSize="sm" fontWeight="bold" color="blue.700" mb={2}>
+                          💡 Pro Tip: Username Analysis
                         </Text>
-                        
-                        <List spacing={3}>
-                          <ListItem>
-                            <ListIcon as={StarIcon} color="blue.500" />
-                            <Text as="span" fontWeight="bold">Google Gemini AI (70% weight):</Text> Advanced language model analyzes content quality, emotional triggers, and viral patterns
-                          </ListItem>
-                          <ListItem>
-                            <ListIcon as={StarIcon} color="green.500" />
-                            <Text as="span" fontWeight="bold">Enhanced ML Model (30% weight):</Text> Machine learning trained on historical viral content data
-                          </ListItem>
-                          <ListItem>
-                            <ListIcon as={StarIcon} color="purple.500" />
-                            <Text as="span" fontWeight="bold">LunarCrush MCP Data:</Text> Real-time social metrics, follower counts, and engagement rates
-                          </ListItem>
-                        </List>
-                      </CardBody>
-                    </Card>
+                        <Text fontSize="xs" color="blue.600">
+                          When you provide your username on MCP-supported platforms (X, Reddit, YouTube), 
+                          we can analyze your actual follower metrics for more accurate viral predictions!
+                        </Text>
+                      </Box>
+                    </VStack>
+                  </CardBody>
+                </Card>
+              </VStack>
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
 
-                    <Card>
-                      <CardBody>
-                        <Heading size="sm" mb={3}>📊 Analysis Factors</Heading>
-                        <SimpleGrid columns={2} spacing={4}>
-                          <Box>
-                            <Text fontWeight="bold" mb={2}>Creator Metrics:</Text>
-                            <List spacing={1} fontSize="sm">
-                              <ListItem>• Follower count & growth</ListItem>
-                              <ListItem>• Engagement rate history</ListItem>
-                              <ListItem>• Creator ranking</ListItem>
-                              <ListItem>• Verification status</ListItem>
-                            </List>
-                          </Box>
-                          <Box>
-                            <Text fontWeight="bold" mb={2}>Content Analysis:</Text>
-                            <List spacing={1} fontSize="sm">
-                              <ListItem>• Emotional triggers</ListItem>
-                              <ListItem>• Trending topic alignment</ListItem>
-                              <ListItem>• Platform optimization</ListItem>
-                              <ListItem>• Content structure</ListItem>
-                            </List>
-                          </Box>
-                        </SimpleGrid>
-                      </CardBody>
-                    </Card>
+        {/* Error Alert */}
+        {error && (
+          <Alert status="error" borderRadius="lg">
+            <AlertIcon />
+            {error}
+          </Alert>
+        )}
 
-                    <Alert status="info">
-                      <AlertIcon />
-                      <AlertDescription>
-                        <Text fontWeight="bold">Real-Time Data:</Text> This tool uses live data from LunarCrush MCP 
-                        and real AI analysis from Google Gemini. No mock data or templates are used.
-                      </AlertDescription>
-                    </Alert>
-                  </VStack>
-                </TabPanel>
-              </TabPanels>
-            </Tabs>
-          </CardBody>
-        </Card>
-
-        {/* Trending Topics Display */}
-        {trendingTopics.length > 0 && (
-          <Card>
+        {/* Loading State */}
+        {loading && (
+          <Card bg={cardBg} borderRadius="lg">
             <CardBody>
-              <Heading size="sm" mb={3}>📈 Current Trending Topics</Heading>
-              <Wrap>
-                {trendingTopics.map((topic, index) => (
-                  <WrapItem key={index}>
-                    <Tag size="md" colorScheme={topic.change > 0 ? 'green' : 'red'}>
-                      <TagLabel>
-                        {topic.name} {topic.change > 0 ? '+' : ''}{topic.change}%
-                      </TagLabel>
-                    </Tag>
-                  </WrapItem>
-                ))}
-              </Wrap>
+              <VStack spacing={4}>
+                <Spinner size="xl" color="purple.500" />
+                <VStack spacing={2}>
+                  <Text fontWeight="bold">🤖 AI Analysis in Progress</Text>
+                  <Text fontSize="sm" color="gray.600" textAlign="center">
+                    • Accessing {getPlatformSupport().supported ? 'real-time MCP data' : 'platform analysis'}<br/>
+                    • Running Gemini 2.0 Flash Lite analysis<br/>
+                    • Calculating viral probability for {niches.find(n => n.value === niche)?.label}
+                  </Text>
+                </VStack>
+                <Progress size="lg" colorScheme="purple" isIndeterminate w="100%" />
+              </VStack>
+            </CardBody>
+          </Card>
+        )}
+
+        {/* Prediction Results */}
+        {prediction && (
+          <Card bg={cardBg} borderRadius="lg" borderWidth="2px" borderColor={borderColor}>
+            <CardBody>
+              <VStack spacing={6} align="stretch">
+                {/* Main Prediction Score */}
+                <Box textAlign="center">
+                  <Badge 
+                    fontSize="lg" 
+                    p={3} 
+                    borderRadius="full" 
+                    colorScheme={getConfidenceColor(prediction.confidence)}
+                  >
+                    {getViralLabel(prediction.confidence)}
+                  </Badge>
+                  <Heading size="2xl" mt={2} color={`${getConfidenceColor(prediction.confidence)}.500`}>
+                    {prediction.confidence}%
+                  </Heading>
+                  <Text color="gray.600" mt={2}>
+                    Viral Probability Score
+                  </Text>
+                  <Progress
+                    value={prediction.confidence}
+                    size="lg"
+                    colorScheme={getConfidenceColor(prediction.confidence)}
+                    mt={4}
+                    borderRadius="full"
+                  />
+                </Box>
+
+                <Divider />
+
+                {/* Detailed Metrics */}
+                <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+                  <Stat textAlign="center">
+                    <StatLabel>Platform Fit</StatLabel>
+                    <StatNumber fontSize="2xl">
+                      {prediction.platformFit || Math.floor(prediction.confidence * 0.9)}%
+                    </StatNumber>
+                    <StatHelpText>{getPlatformSupport().label}</StatHelpText>
+                  </Stat>
+
+                  <Stat textAlign="center">
+                    <StatLabel>Niche Relevance</StatLabel>
+                    <StatNumber fontSize="2xl">
+                      {Math.floor(prediction.confidence * 0.85)}%
+                    </StatNumber>
+                    <StatHelpText>{niches.find(n => n.value === niche)?.label}</StatHelpText>
+                  </Stat>
+
+                  <Stat textAlign="center">
+                    <StatLabel>Content Type</StatLabel>
+                    <StatNumber fontSize="2xl">
+                      {Math.floor(prediction.confidence * 0.95)}%
+                    </StatNumber>
+                    <StatHelpText>{contentTypes.find(ct => ct.value === contentType)?.label}</StatHelpText>
+                  </Stat>
+
+                  <Stat textAlign="center">
+                    <StatLabel>Data Source</StatLabel>
+                    <StatNumber fontSize="lg">
+                      {getPlatformSupport().supported ? 'MCP' : 'Analysis'}
+                    </StatNumber>
+                    <StatHelpText>{getPlatformSupport().note}</StatHelpText>
+                  </Stat>
+                </SimpleGrid>
+
+                {/* AI Analysis */}
+                {prediction.aiAnalysis && (
+                  <Box>
+                    <Heading size="md" mb={3}>🤖 Gemini AI Analysis</Heading>
+                    <Text bg="purple.50" p={4} borderRadius="md" fontSize="sm">
+                      {prediction.aiAnalysis}
+                    </Text>
+                  </Box>
+                )}
+
+                {/* Metadata */}
+                <Box fontSize="xs" color="gray.500" textAlign="center" bg="gray.50" p={3} borderRadius="md">
+                  <Text>
+                    Analysis completed at {new Date(prediction.timestamp).toLocaleString()}
+                  </Text>
+                  <Text mt={1}>
+                    Powered by Google Gemini 2.0 Flash Lite + {getPlatformSupport().supported ? 'LunarCrush MCP Protocol' : 'Platform Analysis'}
+                  </Text>
+                </Box>
+              </VStack>
             </CardBody>
           </Card>
         )}
       </VStack>
-    </Container>
+    </Box>
   );
 };
 

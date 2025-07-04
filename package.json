@@ -8,9 +8,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "collect": "node scripts/collect_viral_posts.js",
-    "analyze": "node scripts/analyze_patterns.js",
-    "test": "node tests/run_tests.js"
+    "test": "node scripts/test-all.js",
+    "test:quick": "node scripts/testing/verify-functionality.js",
+    "test:api": "node scripts/testing/test-apis.js",
+    "test:manual": "echo 'See scripts/testing/manual-tests.md for manual testing checklist'"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.2.4",
