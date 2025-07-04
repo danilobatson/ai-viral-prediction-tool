@@ -4,11 +4,36 @@
   "description": "AI tool that predicts viral crypto posts with high accuracy",
   "main": "index.js",
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
     "collect": "node scripts/collect_viral_posts.js",
     "analyze": "node scripts/analyze_patterns.js",
     "test": "node tests/run_tests.js"
   },
-  "keywords": ["ai", "crypto", "viral", "prediction", "social-media"],
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "next": "^14.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.0.0"
+  },
+  "keywords": [
+    "ai",
+    "crypto",
+    "viral",
+    "prediction",
+    "social-media",
+    "next.js",
+    "api"
+  ],
   "author": "Danilo Batson",
   "license": "MIT"
 }
