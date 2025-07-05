@@ -56,7 +56,7 @@ import {
 
 const BatchAnalysis = () => {
 	const [posts, setPosts] = useState('');
-	const [platform, setPlatform] = useState('twitter');
+	const [platform] = useState('twitter');
 	const [niche, setNiche] = useState('crypto');
 	const [contentType, setContentType] = useState('text');
 	const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -67,149 +67,63 @@ const BatchAnalysis = () => {
 	const [rateLimitDelay, setRateLimitDelay] = useState('1000');
 	const toast = useToast();
 
-	const platforms = [
-		{ value: 'twitter', label: 'X/Twitter', supported: true },
-		{ value: 'instagram', label: 'Instagram', supported: false },
-		{ value: 'linkedin', label: 'LinkedIn', supported: false },
-		{ value: 'tiktok', label: 'TikTok', supported: false },
-		{ value: 'youtube', label: 'YouTube', supported: true },
-		{ value: 'reddit', label: 'Reddit', supported: true },
-	];
-
 	const niches = [
-		{ value: 'crypto', label: 'Cryptocurrency & DeFi' },
-		{ value: 'ai', label: 'AI & Machine Learning' },
-		{ value: 'tech', label: 'Technology' },
-		{ value: 'business', label: 'Business & Finance' },
-		{ value: 'marketing', label: 'Marketing & Growth' },
-		{ value: 'startup', label: 'Startups & Innovation' },
-		{ value: 'gaming', label: 'Gaming & Entertainment' },
-		{ value: 'nft', label: 'NFTs & Digital Art' },
-		{ value: 'defi', label: 'DeFi & Web3' },
-		{ value: 'trading', label: 'Trading & Investing' },
+		{ value: 'crypto', label: '₿ Cryptocurrency & DeFi' },
+		{ value: 'bitcoin', label: '🟠 Bitcoin' },
+		{ value: 'ethereum', label: '⟠ Ethereum' },
+		{ value: 'altcoins', label: '🪙 Altcoins' },
+		{ value: 'nft', label: '🖼️ NFTs & Digital Art' },
+		{ value: 'trading', label: '📈 Trading & Investing' },
+		{ value: 'ai', label: '🤖 AI & Machine Learning' },
+		{ value: 'tech', label: '💻 Technology' },
+		{ value: 'business', label: '💼 Business' },
+		{ value: 'startup', label: '🚀 Startups' },
 	];
 
 	const contentTypes = [
-		{ value: 'text', label: 'Text Post' },
-		{ value: 'image', label: 'Image Post' },
-		{ value: 'video', label: 'Video Post' },
-		{ value: 'poll', label: 'Poll' },
-		{ value: 'thread', label: 'Thread/Series' },
-		{ value: 'story', label: 'Story' },
-		{ value: 'live', label: 'Live Stream' },
-		{ value: 'other', label: 'Other' },
+		{ value: 'text', label: '📄 Text Tweet' },
+		{ value: 'image', label: '📸 Image Tweet' },
+		{ value: 'video', label: '🎥 Video Tweet' },
+		{ value: 'thread', label: '🧵 Twitter Thread' },
+		{ value: 'poll', label: '📊 Twitter Poll' },
+		{ value: 'quote', label: '💬 Quote Tweet' },
+		{ value: 'reply', label: '↩️ Reply Tweet' },
 	];
 
-	const getPlatformSupport = () => {
-		const p = platforms.find((p) => p.value === platform);
-		return {
-			supported: p?.supported || false,
-			label: p?.supported ? 'MCP Data' : 'Analysis Only',
-			note: p?.supported
-				? 'Real-time data via LunarCrush'
-				: 'Limited analysis without real-time data',
-		};
-	};
-
-	const analyzePost = async (postText, index, totalPosts) => {
-		try {
-			const response = await fetch('/api/predict-viral-ai', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					postData: {
-						text: postText,
-						platform,
-						niche,
-						contentType,
-						media_count:
-							contentType === 'image' ? 1 : contentType === 'video' ? 1 : 0,
-						hashtags: (postText.match(/#\w+/g) || []).length,
-						mentions: (postText.match(/@\w+/g) || []).length,
-						urls: (postText.match(/https?:\/\/\S+/g) || []).length,
-						created_time: new Date().toISOString(),
-						current_time: new Date().toISOString(),
-					},
-					options: {
-						includeAIAnalysis: true,
-						includeDetailedBreakdown: true,
-						model: 'gemini-2.0-flash-lite',
-					},
-				}),
-			});
-
-			if (!response.ok) {
-				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-			}
-
-			const data = await response.json();
-
-			if (!data.success) {
-				throw new Error(data.error || 'Analysis failed');
-			}
-
-			return {
-				id: index + 1,
-				content:
-					postText.length > 100 ? postText.substring(0, 100) + '...' : postText,
-				fullContent: postText,
-				viralProbability: data.viralProbability || 0,
-				confidence: data.confidence || 0,
-				category: data.category || 'Unknown',
-				expectedEngagement: data.expectedEngagement || 0,
-				keyFactors: Array.isArray(data.keyFactors)
-					? data.keyFactors.join(', ')
-					: data.keyFactors || 'Unknown',
-				aiAnalysis: data.aiAnalysis || '',
-				componentScores: data.componentScores || {},
-				recommendations: data.recommendations || [],
-				timestamp: new Date().toISOString(),
-				platform: platform,
-				niche: niche,
-				contentType: contentType,
-			};
-		} catch (error) {
-			console.error(`Error analyzing post ${index + 1}:`, error);
-			return {
-				id: index + 1,
-				content:
-					postText.length > 100 ? postText.substring(0, 100) + '...' : postText,
-				fullContent: postText,
-				viralProbability: 0,
-				confidence: 0,
-				category: 'Error',
-				expectedEngagement: 0,
-				keyFactors: 'Analysis failed',
-				error: error.message,
-				timestamp: new Date().toISOString(),
-				platform: platform,
-				niche: niche,
-				contentType: contentType,
-			};
-		}
-	};
-
-	const handleAnalyze = async () => {
+	const startBatchAnalysis = async () => {
 		if (!posts.trim()) {
 			toast({
-				title: 'Input Required',
-				description: 'Please enter posts to analyze',
-				status: 'warning',
+				title: 'No Content',
+				description: 'Please enter tweets to analyze',
+				status: 'error',
 				duration: 3000,
 				isClosable: true,
 			});
 			return;
 		}
 
-		const postList = posts.split('\n').filter((post) => post.trim());
+		const postList = posts
+			.split('\n')
+			.map((post) => post.trim())
+			.filter((post) => post.length > 0);
+
+		if (postList.length === 0) {
+			toast({
+				title: 'No Valid Content',
+				description: 'Please enter valid tweets to analyze',
+				status: 'error',
+				duration: 3000,
+				isClosable: true,
+			});
+			return;
+		}
 
 		if (postList.length > 50) {
 			toast({
 				title: 'Too Many Posts',
-				description:
-					'Please limit to 50 posts per batch to ensure optimal performance',
-				status: 'warning',
-				duration: 5000,
+				description: 'Maximum 50 tweets per batch. Please reduce the number.',
+				status: 'error',
+				duration: 3000,
 				isClosable: true,
 			});
 			return;
@@ -218,78 +132,121 @@ const BatchAnalysis = () => {
 		setIsAnalyzing(true);
 		setProgress(0);
 		setCurrentPost(0);
+		setResults(null);
+
+		const delay = parseInt(rateLimitDelay);
 		const analysisResults = [];
-		const delayMs = parseInt(rateLimitDelay);
+		const errors = [];
 
 		try {
-			toast({
-				title: 'Batch Analysis Started',
-				description: `Analyzing ${postList.length} posts with real AI and MCP data`,
-				status: 'info',
-				duration: 3000,
-				isClosable: true,
-			});
-
 			for (let i = 0; i < postList.length; i++) {
 				setCurrentPost(i + 1);
 				setProgress(((i + 1) / postList.length) * 100);
 
-				// Real API analysis for each post
-				const result = await analyzePost(postList[i], i, postList.length);
-				analysisResults.push(result);
+				try {
+					const postData = {
+						text: postList[i],
+						platform: 'twitter', // Always Twitter
+						niche,
+						contentType,
+						created_time: new Date().toISOString(),
+					};
 
-				// Rate limiting to prevent API overload
-				if (i < postList.length - 1 && delayMs > 0) {
-					await new Promise((resolve) => setTimeout(resolve, delayMs));
+					const response = await fetch('/api/predict-viral-ai', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({ postData }),
+					});
+
+					const data = await response.json();
+
+					if (data.success) {
+						analysisResults.push({
+							id: i + 1,
+							content: postList[i].substring(0, 100),
+							fullContent: postList[i],
+							viralProbability: data.prediction.confidence || 0,
+							confidence: data.prediction.confidence || 0,
+							expectedEngagement: data.prediction.expectedEngagement || 0,
+							category: data.prediction.category || 'Unknown',
+							keyFactors: data.prediction.recommendations?.join(', ') || 'No recommendations',
+							platform: 'Twitter',
+							niche: niches.find((n) => n.value === niche)?.label || niche,
+							contentType: contentTypes.find((ct) => ct.value === contentType)?.label || contentType,
+							timestamp: new Date().toISOString(),
+							aiAnalysis: data.prediction.analysis || '',
+							error: null,
+						});
+					} else {
+						errors.push({
+							post: i + 1,
+							content: postList[i].substring(0, 50),
+							error: data.error || 'Analysis failed',
+						});
+
+						analysisResults.push({
+							id: i + 1,
+							content: postList[i].substring(0, 100),
+							fullContent: postList[i],
+							viralProbability: 0,
+							confidence: 0,
+							expectedEngagement: 0,
+							category: 'Error',
+							keyFactors: 'Analysis failed',
+							platform: 'Twitter',
+							niche: niches.find((n) => n.value === niche)?.label || niche,
+							contentType: contentTypes.find((ct) => ct.value === contentType)?.label || contentType,
+							timestamp: new Date().toISOString(),
+							aiAnalysis: '',
+							error: data.error || 'Analysis failed',
+						});
+					}
+				} catch (error) {
+					console.error(`Error analyzing post ${i + 1}:`, error);
+					errors.push({
+						post: i + 1,
+						content: postList[i].substring(0, 50),
+						error: error.message,
+					});
+				}
+
+				// Rate limiting delay
+				if (i < postList.length - 1) {
+					await new Promise((resolve) => setTimeout(resolve, delay));
 				}
 			}
 
 			// Calculate summary statistics
 			const validResults = analysisResults.filter((r) => !r.error);
-			const avgViralProbability =
-				validResults.length > 0
-					? Math.round(
-							validResults.reduce((sum, r) => sum + r.viralProbability, 0) /
-								validResults.length
-					  )
-					: 0;
+			const avgProbability = validResults.length > 0
+				? validResults.reduce((sum, r) => sum + r.viralProbability, 0) / validResults.length
+				: 0;
+			const highPotential = validResults.filter((r) => r.viralProbability >= 70).length;
+			const topResult = validResults.length > 0
+				? validResults.reduce((max, r) => (r.viralProbability > max.viralProbability ? r : max), validResults[0])
+				: null;
 
-			const highViralCount = validResults.filter(
-				(r) => r.viralProbability >= 70
-			).length;
-			const recommendedPosts = validResults
-				.filter((r) => r.viralProbability >= 80)
-				.sort((a, b) => b.viralProbability - a.viralProbability)
-				.slice(0, 5);
+			const summary = {
+				totalAnalyzed: postList.length,
+				successful: validResults.length,
+				failed: errors.length,
+				avgProbability: Math.round(avgProbability),
+				highPotential,
+				topPerformer: topResult,
+				errors: errors.slice(0, 5), // Show max 5 errors
+			};
 
 			setResults({
+				summary,
 				posts: analysisResults,
-				summary: {
-					totalPosts: postList.length,
-					successfulAnalyses: validResults.length,
-					failedAnalyses: analysisResults.length - validResults.length,
-					avgViralProbability,
-					avgConfidence:
-						validResults.length > 0
-							? Math.round(
-									validResults.reduce((sum, r) => sum + r.confidence, 0) /
-										validResults.length
-							  )
-							: 0,
-					highViralCount,
-					recommendedPosts,
-					platform: platforms.find((p) => p.value === platform)?.label,
-					niche: niches.find((n) => n.value === niche)?.label,
-					contentType: contentTypes.find((ct) => ct.value === contentType)
-						?.label,
-					analysisDate: new Date().toLocaleDateString(),
-					supportLevel: getPlatformSupport().label,
-				},
+				timestamp: new Date().toISOString(),
 			});
 
 			toast({
-				title: 'Analysis Complete!',
-				description: `Successfully analyzed ${validResults.length}/${postList.length} posts`,
+				title: 'Batch Analysis Complete',
+				description: `Successfully analyzed ${validResults.length}/${postList.length} tweets`,
 				status: 'success',
 				duration: 5000,
 				isClosable: true,
@@ -313,7 +270,7 @@ const BatchAnalysis = () => {
 
 		const csvContent = [
 			[
-				'Post ID',
+				'Tweet ID',
 				'Content Preview',
 				'Full Content',
 				'Viral Probability',
@@ -353,7 +310,7 @@ const BatchAnalysis = () => {
 		const a = document.createElement('a');
 		a.style.display = 'none';
 		a.href = url;
-		a.download = `viral-batch-analysis-${
+		a.download = `twitter-batch-analysis-${
 			new Date().toISOString().split('T')[0]
 		}.csv`;
 		document.body.appendChild(a);
@@ -363,7 +320,7 @@ const BatchAnalysis = () => {
 
 		toast({
 			title: 'Export Successful',
-			description: 'Results exported to CSV with full analysis data',
+			description: 'Twitter analysis results exported to CSV',
 			status: 'success',
 			duration: 3000,
 			isClosable: true,
@@ -375,19 +332,31 @@ const BatchAnalysis = () => {
 			<VStack spacing={6} align='stretch'>
 				{/* Header */}
 				<Box textAlign='center'>
+					<Badge colorScheme='blue' fontSize='sm' mb={2}>
+						🐦 Twitter/X Batch Analysis
+					</Badge>
 					<Heading size='lg' mb={2}>
-						📊 Batch Probability Analysis
+						Twitter Batch Probability Analysis
 					</Heading>
 					<Text color='gray.600'>
-						Estimate viral probability for multiple posts using AI and real-time
-						social data
+						Analyze multiple tweets simultaneously using LunarCrush MCP and AI
 					</Text>
-					<Badge
-						mt={2}
-						colorScheme={getPlatformSupport().supported ? 'green' : 'orange'}>
-						{getPlatformSupport().label}
+					<Badge colorScheme='green' mt={2}>
+						✅ Live Twitter Data via MCP
 					</Badge>
 				</Box>
+
+				{/* Platform Info */}
+				<Alert status='info' borderRadius='lg'>
+					<AlertIcon />
+					<Box>
+						<Text fontWeight='bold'>Twitter Batch Processing</Text>
+						<Text fontSize='sm'>
+							Optimized for Twitter&apos;s viral mechanics. Process up to 50
+							tweets at once with real-time social data analysis.
+						</Text>
+					</Box>
+				</Alert>
 
 				{/* Input Section */}
 				<Card>
@@ -395,7 +364,7 @@ const BatchAnalysis = () => {
 						<HStack justify='space-between'>
 							<HStack>
 								<Icon as={Upload} />
-								<Heading size='md'>Input Posts</Heading>
+								<Heading size='md'>Input Tweets</Heading>
 							</HStack>
 							<Tooltip label='Configure analysis parameters'>
 								<Icon as={Settings} cursor='pointer' />
@@ -405,100 +374,65 @@ const BatchAnalysis = () => {
 					<CardBody>
 						<VStack spacing={4}>
 							<Textarea
-								placeholder="Enter multiple posts (one per line)...&#10;&#10;Example:&#10;🚀 Bitcoin just hit $100K! This is history in the making. #Bitcoin #Crypto&#10;AI agents are going to revolutionize how we work. The future is here! #AI #Tech&#10;Just launched my new startup. Excited to share what we've been building! #Startup"
+								placeholder="Enter multiple tweets (one per line)...&#10;&#10;Example:&#10;🚀 Bitcoin just hit $100K! This is history in the making.&#10;The crypto market is looking bullish today 📈&#10;Just bought the dip on ETH. Let's see where this goes!"
 								value={posts}
 								onChange={(e) => setPosts(e.target.value)}
-								rows={8}
+								minH='200px'
 								resize='vertical'
 							/>
 
-							<SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} w='full'>
-								<Select
-									value={platform}
-									onChange={(e) => setPlatform(e.target.value)}>
-									{platforms.map((p) => (
-										<option key={p.value} value={p.value}>
-											{p.label} {p.supported ? '✓' : '⚠️'}
-										</option>
-									))}
-								</Select>
-
-								<Select
-									value={niche}
-									onChange={(e) => setNiche(e.target.value)}>
-									{niches.map((n) => (
-										<option key={n.value} value={n.value}>
-											{n.label}
-										</option>
-									))}
-								</Select>
-
-								<Select
-									value={contentType}
-									onChange={(e) => setContentType(e.target.value)}>
-									{contentTypes.map((ct) => (
-										<option key={ct.value} value={ct.value}>
-											{ct.label}
-										</option>
-									))}
-								</Select>
-							</SimpleGrid>
-
 							<HStack w='full' spacing={4}>
-								<FormControl display='flex' alignItems='center'>
-									<FormLabel htmlFor='rate-limit' mb='0' fontSize='sm'>
-										Rate Limit (ms):
-									</FormLabel>
+								<FormControl>
+									<FormLabel fontSize='sm'>Niche</FormLabel>
 									<Select
-										id='rate-limit'
-										value={rateLimitDelay}
-										onChange={(e) => setRateLimitDelay(e.target.value)}
-										size='sm'
-										w='120px'>
-										<option value='500'>500ms</option>
-										<option value='1000'>1000ms</option>
-										<option value='2000'>2000ms</option>
-										<option value='3000'>3000ms</option>
+										value={niche}
+										onChange={(e) => setNiche(e.target.value)}
+										size='sm'>
+										{niches.map((n) => (
+											<option key={n.value} value={n.value}>
+												{n.label}
+											</option>
+										))}
 									</Select>
 								</FormControl>
 
-								<FormControl display='flex' alignItems='center'>
-									<FormLabel htmlFor='creator-analysis' mb='0' fontSize='sm'>
-										Include Creator Analysis:
-									</FormLabel>
-									<Switch
-										id='creator-analysis'
-										isChecked={includeCreatorAnalysis}
-										onChange={(e) =>
-											setIncludeCreatorAnalysis(e.target.checked)
-										}
-									/>
+								<FormControl>
+									<FormLabel fontSize='sm'>Content Type</FormLabel>
+									<Select
+										value={contentType}
+										onChange={(e) => setContentType(e.target.value)}
+										size='sm'>
+										{contentTypes.map((ct) => (
+											<option key={ct.value} value={ct.value}>
+												{ct.label}
+											</option>
+										))}
+									</Select>
+								</FormControl>
+
+								<FormControl>
+									<FormLabel fontSize='sm'>Rate Limit (ms)</FormLabel>
+									<Select
+										value={rateLimitDelay}
+										onChange={(e) => setRateLimitDelay(e.target.value)}
+										size='sm'>
+										<option value='500'>500ms (Fast)</option>
+										<option value='1000'>1s (Balanced)</option>
+										<option value='2000'>2s (Safe)</option>
+										<option value='3000'>3s (Conservative)</option>
+									</Select>
 								</FormControl>
 							</HStack>
 
 							<Button
 								colorScheme='purple'
-								onClick={handleAnalyze}
-								isLoading={isAnalyzing}
-								loadingText={`Analyzing post ${currentPost}...`}
-								leftIcon={<Icon as={BarChart3} />}
 								size='lg'
-								width='full'
-								isDisabled={!posts.trim()}>
-								Analyze All Posts with Real AI
+								onClick={startBatchAnalysis}
+								isLoading={isAnalyzing}
+								loadingText={`Analyzing tweet ${currentPost}...`}
+								w='full'>
+								📊 Start Twitter Batch Analysis
 							</Button>
-
-							{!getPlatformSupport().supported && (
-								<Alert status='warning' borderRadius='md'>
-									<AlertIcon />
-									<Box>
-										<AlertTitle>Limited Platform Support</AlertTitle>
-										<AlertDescription fontSize='sm'>
-											{getPlatformSupport().note}
-										</AlertDescription>
-									</Box>
-								</Alert>
-							)}
 						</VStack>
 					</CardBody>
 				</Card>
@@ -507,134 +441,103 @@ const BatchAnalysis = () => {
 				{isAnalyzing && (
 					<Card>
 						<CardBody>
-							<VStack spacing={3}>
+							<VStack spacing={4}>
 								<HStack w='full' justify='space-between'>
-									<Text fontWeight='bold'>
-										Real-Time Analysis in Progress...
+									<Text fontWeight='bold'>Analyzing Tweets...</Text>
+									<Text fontSize='sm' color='gray.600'>
+										{currentPost} of{' '}
+										{posts.split('\n').filter((p) => p.trim()).length}
 									</Text>
-									<Badge colorScheme='blue'>{Math.round(progress)}%</Badge>
 								</HStack>
-								<Progress value={progress} width='full' colorScheme='purple' />
-								<Text fontSize='sm' color='gray.600'>
-									Processing post {currentPost} with Gemini AI + MCP data -{' '}
-									{Math.round(progress)}% complete
-								</Text>
-								<Text fontSize='xs' color='gray.500'>
-									Rate limited to {rateLimitDelay}ms between requests for
-									optimal performance
+								<Progress
+									value={progress}
+									size='lg'
+									colorScheme='purple'
+									w='full'
+								/>
+								<Text fontSize='sm' color='gray.600' textAlign='center'>
+									Processing tweets with LunarCrush MCP + Google Gemini AI
 								</Text>
 							</VStack>
 						</CardBody>
 					</Card>
 				)}
 
-				{/* Results */}
+				{/* Results Summary */}
 				{results && (
-					<VStack spacing={6} align='stretch'>
-						{/* Enhanced Summary */}
+					<>
 						<Card>
 							<CardHeader>
 								<HStack justify='space-between'>
 									<HStack>
-										<Icon as={TrendingUp} />
+										<Icon as={BarChart3} />
 										<Heading size='md'>Analysis Summary</Heading>
 									</HStack>
 									<Button
-										leftIcon={<Icon as={Download} />}
+										leftIcon={<Download />}
 										onClick={exportResults}
 										size='sm'
 										variant='outline'>
-										Export Full CSV
+										Export CSV
 									</Button>
 								</HStack>
 							</CardHeader>
 							<CardBody>
-								<SimpleGrid columns={{ base: 2, md: 4 }} spacing={4} mb={4}>
-									<Stat textAlign='center'>
-										<StatLabel>Total Posts</StatLabel>
-										<StatNumber>{results.summary.totalPosts}</StatNumber>
-										<StatHelpText>
-											{results.summary.successfulAnalyses} successful
-										</StatHelpText>
+								<SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+									<Stat>
+										<StatLabel>Total Analyzed</StatLabel>
+										<StatNumber>{results.summary.totalAnalyzed}</StatNumber>
+										<StatHelpText>Tweets processed</StatHelpText>
 									</Stat>
-
-									<Stat textAlign='center'>
-										<StatLabel>Avg Viral Score</StatLabel>
+									<Stat>
+										<StatLabel>Success Rate</StatLabel>
 										<StatNumber>
-											{results.summary.avgViralProbability}%
+											{Math.round(
+												(results.summary.successful /
+													results.summary.totalAnalyzed) *
+													100
+											)}
+											%
 										</StatNumber>
 										<StatHelpText>
-											{results.summary.avgConfidence}% confidence
+											{results.summary.successful} successful
 										</StatHelpText>
 									</Stat>
-
-									<Stat textAlign='center'>
-										<StatLabel>High Viral Potential</StatLabel>
-										<StatNumber>{results.summary.highViralCount}</StatNumber>
-										<StatHelpText>70%+ Score</StatHelpText>
+									<Stat>
+										<StatLabel>Avg Probability</StatLabel>
+										<StatNumber>{results.summary.avgProbability}%</StatNumber>
+										<StatHelpText>Viral likelihood</StatHelpText>
 									</Stat>
-
-									<Stat textAlign='center'>
-										<StatLabel>Data Source</StatLabel>
-										<StatNumber fontSize='lg'>
-											{results.summary.supportLevel}
-										</StatNumber>
-										<StatHelpText>{results.summary.platform}</StatHelpText>
+									<Stat>
+										<StatLabel>High Potential</StatLabel>
+										<StatNumber>{results.summary.highPotential}</StatNumber>
+										<StatHelpText>70%+ probability</StatHelpText>
 									</Stat>
 								</SimpleGrid>
 
-								<Box p={3} bg='gray.50' borderRadius='md' fontSize='sm'>
-									<Text>
-										<strong>Analysis Configuration:</strong>
-									</Text>
-									<Text>
-										Platform: {results.summary.platform} | Niche:{' '}
-										{results.summary.niche} | Content:{' '}
-										{results.summary.contentType}
-									</Text>
-									<Text>
-										Date: {results.summary.analysisDate} | Rate Limit:{' '}
-										{rateLimitDelay}ms
-									</Text>
-								</Box>
+								{results.summary.topPerformer && (
+									<>
+										<Divider my={4} />
+										<Alert status='success' borderRadius='lg'>
+											<AlertIcon />
+											<Box>
+												<AlertTitle>Top Performing Tweet</AlertTitle>
+												<AlertDescription fontSize='sm'>
+													&quot;{results.summary.topPerformer.content}...&quot;
+													-{' '}
+													<strong>
+														{results.summary.topPerformer.viralProbability}%
+														probability
+													</strong>
+												</AlertDescription>
+											</Box>
+										</Alert>
+									</>
+								)}
 							</CardBody>
 						</Card>
 
-						{/* Top Recommendations */}
-						{results.summary.recommendedPosts.length > 0 && (
-							<Card>
-								<CardHeader>
-									<HStack>
-										<Icon as={Zap} />
-										<Heading size='md'>
-											Top Recommendations (
-											{results.summary.recommendedPosts.length})
-										</Heading>
-									</HStack>
-								</CardHeader>
-								<CardBody>
-									<VStack spacing={3}>
-										{results.summary.recommendedPosts.map((post) => (
-											<Alert key={post.id} status='success' borderRadius='md'>
-												<AlertIcon />
-												<Box flex='1'>
-													<AlertTitle>
-														Post #{post.id} - {post.viralProbability}% Viral
-														Score ({post.confidence}% confidence)
-													</AlertTitle>
-													<AlertDescription fontSize='sm'>
-														{post.content}
-													</AlertDescription>
-												</Box>
-												<Badge colorScheme='green'>{post.category}</Badge>
-											</Alert>
-										))}
-									</VStack>
-								</CardBody>
-							</Card>
-						)}
-
-						{/* Detailed Results */}
+						{/* Results Table */}
 						<Card>
 							<CardHeader>
 								<HStack>
@@ -647,11 +550,10 @@ const BatchAnalysis = () => {
 									<Table variant='simple' size='sm'>
 										<Thead>
 											<Tr>
-												<Th>Post</Th>
-												<Th>Content Preview</Th>
-												<Th isNumeric>Viral Score</Th>
-												<Th isNumeric>Confidence</Th>
-												<Th isNumeric>Expected Engagement</Th>
+												<Th>Tweet</Th>
+												<Th>Content</Th>
+												<Th>Probability</Th>
+												<Th>Expected Engagement</Th>
 												<Th>Category</Th>
 												<Th>Status</Th>
 											</Tr>
@@ -659,52 +561,34 @@ const BatchAnalysis = () => {
 										<Tbody>
 											{results.posts.map((post) => (
 												<Tr key={post.id}>
-													<Td fontWeight='bold'>#{post.id}</Td>
-													<Td
-														maxW='300px'
-														overflow='hidden'
-														textOverflow='ellipsis'>
-														{post.content}
+													<Td>{post.id}</Td>
+													<Td maxW='300px'>
+														<Text fontSize='sm' noOfLines={2}>
+															{post.content}
+														</Text>
 													</Td>
-													<Td isNumeric>
+													<Td>
 														<Badge
 															colorScheme={
-																post.error
-																	? 'red'
-																	: post.viralProbability >= 80
+																post.viralProbability >= 70
 																	? 'green'
-																	: post.viralProbability >= 60
-																	? 'yellow'
 																	: post.viralProbability >= 40
 																	? 'orange'
 																	: 'red'
 															}>
-															{post.error
-																? 'Error'
-																: `${post.viralProbability}%`}
+															{post.viralProbability}%
 														</Badge>
 													</Td>
-													<Td isNumeric>
-														{post.error ? 'N/A' : `${post.confidence}%`}
-													</Td>
-													<Td isNumeric>
-														{post.error
-															? 'N/A'
-															: post.expectedEngagement.toLocaleString()}
+													<Td>{post.expectedEngagement}</Td>
+													<Td>
+														<Badge size='sm'>{post.category}</Badge>
 													</Td>
 													<Td>
-														<Badge
-															size='sm'
-															variant='outline'
-															colorScheme={post.error ? 'red' : 'blue'}>
-															{post.category}
-														</Badge>
-													</Td>
-													<Td>
-														<Icon
-															as={post.error ? AlertCircle : CheckCircle}
-															color={post.error ? 'red.500' : 'green.500'}
-														/>
+														{post.error ? (
+															<Icon as={AlertCircle} color='red.500' />
+														) : (
+															<Icon as={CheckCircle} color='green.500' />
+														)}
 													</Td>
 												</Tr>
 											))}
@@ -713,30 +597,25 @@ const BatchAnalysis = () => {
 								</TableContainer>
 							</CardBody>
 						</Card>
-
-						{/* Analysis Metadata */}
-						<Box
-							fontSize='xs'
-							color='gray.500'
-							textAlign='center'
-							bg='gray.50'
-							p={3}
-							borderRadius='md'>
-							<Text>
-								Batch analysis completed at {new Date().toLocaleString()} using
-								real AI and MCP data
-							</Text>
-							<Text mt={1}>
-								Powered by Google Gemini 2.0 Flash Lite + LunarCrush MCP
-								Protocol
-							</Text>
-							<Text mt={1}>
-								{results.summary.successfulAnalyses}/
-								{results.summary.totalPosts} posts analyzed successfully
-							</Text>
-						</Box>
-					</VStack>
+					</>
 				)}
+
+				{/* Twitter Tips */}
+				<Alert status='info' borderRadius='lg'>
+					<AlertIcon />
+					<Box>
+						<Text fontWeight='bold'>Twitter Batch Analysis Tips</Text>
+						<Text fontSize='sm'>
+							• Keep tweets under 280 characters for accurate analysis
+							<br />
+							• Mix different content types for comprehensive insights
+							<br />
+							• Use rate limiting to avoid API restrictions
+							<br />• Focus on crypto/finance content for best LunarCrush data
+							coverage
+						</Text>
+					</Box>
+				</Alert>
 			</VStack>
 		</Box>
 	);

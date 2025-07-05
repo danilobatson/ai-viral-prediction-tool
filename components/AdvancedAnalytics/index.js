@@ -234,11 +234,7 @@ const AdvancedAnalytics = () => {
     const names = {
       'twitter': 'Twitter/X',
       'x': 'Twitter/X',
-      'instagram': 'Instagram',
-      'linkedin': 'LinkedIn',
-      'tiktok': 'TikTok',
-      'youtube': 'YouTube',
-      'reddit': 'Reddit'
+      
     };
     return names[platform.toLowerCase()] || platform;
   };

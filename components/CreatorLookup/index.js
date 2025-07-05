@@ -22,28 +22,20 @@ import {
   useColorModeValue,
   Avatar,
   Heading,
-  Select,
+  FormHelperText,
 } from '@chakra-ui/react';
 
 const CreatorLookup = () => {
   const [username, setUsername] = useState('');
-  const [platform, setPlatform] = useState('x');
   const [creatorData, setCreatorData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const cardBg = useColorModeValue('white', 'gray.700');
 
-  // Only MCP-supported platforms
-  const supportedPlatforms = [
-    { value: 'x', label: 'X (Twitter)', supported: true },
-    { value: 'reddit', label: 'Reddit', supported: true },
-    { value: 'youtube', label: 'YouTube', supported: true },
-  ];
-
   const lookupCreator = async () => {
     if (!username.trim()) {
-      setError('Please enter a username');
+      setError('Please enter a Twitter username');
       return;
     }
 
@@ -58,17 +50,17 @@ const CreatorLookup = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          handle: username.trim(), // Changed from 'username' to 'handle'
-          platform,
+          handle: username.trim().replace('@', ''), // Remove @ if present
+          platform: 'twitter', // Always Twitter
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setCreatorData(data.creator);
+        setCreatorData(data.creatorData);
       } else {
-        setError(data.error || 'Failed to lookup creator');
+        setError(data.error || 'Failed to lookup Twitter user');
       }
     } catch (err) {
       setError('Network error. Please try again.');
@@ -78,130 +70,278 @@ const CreatorLookup = () => {
     }
   };
 
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      lookupCreator();
+    }
+  };
+
   const formatNumber = (num) => {
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + 'M';
-    }
-    if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'K';
-    }
-    return num?.toLocaleString() || '0';
+    if (!num) return 'N/A';
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toLocaleString();
   };
 
   return (
-    <Box maxW="4xl" mx="auto">
-      <VStack spacing={6} align="stretch">
-        <Card bg={cardBg} borderRadius="lg">
-          <CardBody>
-            <VStack spacing={4} align="stretch">
-              <HStack spacing={4}>
-                <FormControl>
-                  <FormLabel fontWeight="bold">Platform</FormLabel>
-                  <Select value={platform} onChange={(e) => setPlatform(e.target.value)}>
-                    {supportedPlatforms.map(p => (
-                      <option key={p.value} value={p.value}>{p.label}</option>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl>
-                  <FormLabel fontWeight="bold">Creator Username</FormLabel>
-                  <Input
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter username (e.g., elonmusk)"
-                    onKeyPress={(e) => e.key === 'Enter' && lookupCreator()}
-                  />
-                </FormControl>
-              </HStack>
-              <Button
-                colorScheme="blue"
-                onClick={lookupCreator}
-                isLoading={loading}
-                loadingText="Looking up via MCP..."
-                isDisabled={!username.trim()}
-                size="lg"
-              >
-                🔍 Lookup Creator via MCP
-              </Button>
-            </VStack>
-          </CardBody>
-        </Card>
+		<Box maxW='4xl' mx='auto' p={6}>
+			<VStack spacing={8} align='stretch'>
+				{/* Header */}
+				<Box textAlign='center'>
+					<Badge colorScheme='blue' fontSize='sm' mb={2}>
+						🐦 Twitter/X Creator Analysis
+					</Badge>
+					<Heading size='lg' mb={2}>
+						Twitter Creator Analyzer
+					</Heading>
+					<Text color='gray.600' fontSize='md'>
+						Get real-time Twitter creator metrics powered by LunarCrush MCP
+					</Text>
+					<Badge colorScheme='green' mt={2}>
+						✅ Live Twitter Data via MCP
+					</Badge>
+				</Box>
 
-        {error && (
-          <Alert status="error" borderRadius="lg">
-            <AlertIcon />
-            {error}
-          </Alert>
-        )}
+				{/* Platform Info */}
+				<Alert status='info' borderRadius='lg'>
+					<AlertIcon />
+					<Box>
+						<Text fontWeight='bold'>Twitter Creator Intelligence</Text>
+						<Text fontSize='sm'>
+							Analyze any Twitter account&apos;s viral potential, engagement
+							patterns, and influence metrics using real-time social data.
+						</Text>
+					</Box>
+				</Alert>
 
-        {loading && (
-          <Card bg={cardBg} borderRadius="lg">
-            <CardBody>
-              <VStack spacing={4}>
-                <Spinner size="xl" color="blue.500" />
-                <Text>Accessing LunarCrush MCP data...</Text>
-              </VStack>
-            </CardBody>
-          </Card>
-        )}
+				{/* Input Section */}
+				<Card bg={cardBg} borderRadius='lg'>
+					<CardBody>
+						<VStack spacing={4}>
+							<Heading size='md'>Twitter Account Lookup</Heading>
 
-        {creatorData && (
-          <Card bg={cardBg} borderRadius="lg">
-            <CardBody>
-              <VStack spacing={6} align="stretch">
-                <HStack spacing={4}>
-                  <Avatar 
-                    size="lg" 
-                    name={creatorData.name || username}
-                    src={creatorData.avatar}
-                  />
-                  <VStack align="start" spacing={1}>
-                    <Heading size="lg">{creatorData.name || username}</Heading>
-                    <Text color="gray.600">@{username}</Text>
-                    <Badge colorScheme="blue">{platform.toUpperCase()}</Badge>
-                  </VStack>
-                </HStack>
+							<FormControl>
+								<FormLabel fontWeight='bold'>Twitter Username</FormLabel>
+								<HStack>
+									<Input
+										value={username}
+										onChange={(e) => setUsername(e.target.value)}
+										onKeyPress={handleKeyPress}
+										placeholder='elonmusk'
+										bg={cardBg}
+										size='lg'
+									/>
+									<Button
+										colorScheme='purple'
+										onClick={lookupCreator}
+										isLoading={loading}
+										loadingText='Analyzing...'
+										size='lg'
+										minW='120px'>
+										🔍 Analyze
+									</Button>
+								</HStack>
+								<FormHelperText>
+									Enter any Twitter username (without the @). Example: elonmusk,
+									VitalikButerin, satoshi
+								</FormHelperText>
+							</FormControl>
+						</VStack>
+					</CardBody>
+				</Card>
 
-                <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
-                  <Stat textAlign="center">
-                    <StatLabel>Followers</StatLabel>
-                    <StatNumber color="blue.500">
-                      {formatNumber(creatorData.followers || 0)}
-                    </StatNumber>
-                    <StatHelpText>Total audience</StatHelpText>
-                  </Stat>
+				{/* Error Display */}
+				{error && (
+					<Alert status='error' borderRadius='lg'>
+						<AlertIcon />
+						<Text>{error}</Text>
+					</Alert>
+				)}
 
-                  <Stat textAlign="center">
-                    <StatLabel>Following</StatLabel>
-                    <StatNumber color="green.500">
-                      {formatNumber(creatorData.following || 0)}
-                    </StatNumber>
-                    <StatHelpText>Accounts followed</StatHelpText>
-                  </Stat>
+				{/* Loading State */}
+				{loading && (
+					<Card
+						bg={cardBg}
+						borderRadius='lg'
+						borderWidth='2px'
+						borderColor='purple.200'>
+						<CardBody>
+							<VStack spacing={4}>
+								<Spinner size='lg' color='purple.500' />
+								<VStack spacing={2}>
+									<Text fontWeight='bold' color='purple.600'>
+										🔍 Analyzing Twitter Creator
+									</Text>
+									<Text fontSize='sm' color='gray.600' textAlign='center'>
+										• Fetching real-time Twitter data via LunarCrush MCP
+										<br />
+										• Analyzing follower metrics and engagement patterns
+										<br />• Calculating creator authority and viral potential
+									</Text>
+								</VStack>
+							</VStack>
+						</CardBody>
+					</Card>
+				)}
 
-                  <Stat textAlign="center">
-                    <StatLabel>Posts</StatLabel>
-                    <StatNumber color="purple.500">
-                      {formatNumber(creatorData.posts || 0)}
-                    </StatNumber>
-                    <StatHelpText>Total content</StatHelpText>
-                  </Stat>
+				{/* Creator Results */}
+				{creatorData && (
+					<Card
+						bg={cardBg}
+						borderRadius='lg'
+						borderWidth='2px'
+						borderColor='purple.200'>
+						<CardBody>
+							<VStack spacing={6} align='stretch'>
+								{/* Creator Header */}
+								<HStack spacing={4}>
+									<Avatar
+										size='xl'
+										name={creatorData.handle}
+										src={creatorData.avatar}
+									/>
+									<VStack align='start' spacing={1}>
+										<HStack>
+											<Heading size='lg'>@{creatorData.handle}</Heading>
+											{creatorData.verified && (
+												<Badge colorScheme='blue'>✓ Verified</Badge>
+											)}
+										</HStack>
+										<Text color='gray.600'>Twitter Creator</Text>
+										<Badge
+											colorScheme={
+												creatorData.mcpSupported ? 'green' : 'orange'
+											}
+											variant='subtle'>
+											{creatorData.mcpSupported
+												? '✅ Live MCP Data'
+												: '📊 Analysis Mode'}
+										</Badge>
+									</VStack>
+								</HStack>
 
-                  <Stat textAlign="center">
-                    <StatLabel>Engagement</StatLabel>
-                    <StatNumber color="orange.500">
-                      {creatorData.engagementRate || 'N/A'}%
-                    </StatNumber>
-                    <StatHelpText>Avg interaction rate</StatHelpText>
-                  </Stat>
-                </SimpleGrid>
-              </VStack>
-            </CardBody>
-          </Card>
-        )}
-      </VStack>
-    </Box>
-  );
+								{/* Creator Metrics */}
+								<SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+									<Stat textAlign='center'>
+										<StatLabel>Followers</StatLabel>
+										<StatNumber fontSize='2xl'>
+											{formatNumber(creatorData.followers)}
+										</StatNumber>
+										<StatHelpText>Twitter Reach</StatHelpText>
+									</Stat>
+
+									<Stat textAlign='center'>
+										<StatLabel>Engagement Rate</StatLabel>
+										<StatNumber fontSize='2xl'>
+											{creatorData.engagementRate
+												? `${creatorData.engagementRate}%`
+												: 'N/A'}
+										</StatNumber>
+										<StatHelpText>Avg Interaction %</StatHelpText>
+									</Stat>
+
+									<Stat textAlign='center'>
+										<StatLabel>Authority Score</StatLabel>
+										<StatNumber fontSize='2xl'>
+											{creatorData.authorityScore || 'N/A'}
+										</StatNumber>
+										<StatHelpText>Influence Rating</StatHelpText>
+									</Stat>
+
+									<Stat textAlign='center'>
+										<StatLabel>Viral Potential</StatLabel>
+										<StatNumber fontSize='2xl'>
+											{creatorData.viralPotential || 'N/A'}%
+										</StatNumber>
+										<StatHelpText>Content Reach</StatHelpText>
+									</Stat>
+								</SimpleGrid>
+
+								{/* Additional Creator Insights */}
+								{creatorData.insights && (
+									<>
+										<Alert status='info' borderRadius='lg'>
+											<AlertIcon />
+											<Box>
+												<Text fontWeight='bold'>Creator Insights</Text>
+												<Text fontSize='sm'>{creatorData.insights}</Text>
+											</Box>
+										</Alert>
+									</>
+								)}
+
+								{/* Data Source Info */}
+								<Alert
+									status={creatorData.mcpSupported ? 'success' : 'warning'}
+									borderRadius='lg'>
+									<AlertIcon />
+									<Box>
+										<Text fontWeight='bold'>
+											{creatorData.mcpSupported
+												? 'Live Data Active'
+												: 'Analysis Mode'}
+										</Text>
+										<Text fontSize='sm'>{creatorData.message}</Text>
+									</Box>
+								</Alert>
+
+								{/* Twitter-Specific Creator Tips */}
+								<Alert status='info' borderRadius='lg'>
+									<AlertIcon />
+									<Box>
+										<Text fontWeight='bold'>Twitter Creator Optimization</Text>
+										<Text fontSize='sm'>
+											• Post consistently during peak crypto hours (9-11 AM &
+											7-9 PM EST)
+											<br />
+											• Engage with crypto influencers and trending topics
+											<br />
+											• Use threads for in-depth analysis and storytelling
+											<br />• Share real-time market insights and opinions
+										</Text>
+									</Box>
+								</Alert>
+							</VStack>
+						</CardBody>
+					</Card>
+				)}
+
+				{/* Twitter Creator Examples */}
+				{!creatorData && !loading && (
+					<Card bg={cardBg} borderRadius='lg'>
+						<CardBody>
+							<VStack spacing={4}>
+								<Heading size='md'>Popular Crypto Twitter Creators</Heading>
+								<Text color='gray.600' fontSize='sm' textAlign='center'>
+									Try analyzing these popular crypto Twitter accounts:
+								</Text>
+								<HStack wrap='wrap' justify='center' spacing={2}>
+									{[
+										'elonmusk',
+										'VitalikButerin',
+										'APompliano',
+										'DocumentingBTC',
+										'CryptoCobain',
+									].map((handle) => (
+										<Button
+											key={handle}
+											size='sm'
+											variant='outline'
+											onClick={() => {
+												setUsername(handle);
+												lookupCreator();
+											}}>
+											@{handle}
+										</Button>
+									))}
+								</HStack>
+							</VStack>
+						</CardBody>
+					</Card>
+				)}
+			</VStack>
+		</Box>
+	);
 };
 
 export default CreatorLookup;

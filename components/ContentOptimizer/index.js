@@ -37,10 +37,7 @@ const ContentOptimizer = () => {
 
   const platforms = [
     { value: 'twitter', label: 'X/Twitter', charLimit: 280 },
-    { value: 'instagram', label: 'Instagram', charLimit: 2200 },
-    { value: 'linkedin', label: 'LinkedIn', charLimit: 3000 },
-    { value: 'tiktok', label: 'TikTok', charLimit: 150 },
-    { value: 'youtube', label: 'YouTube', charLimit: 5000 },
+
   ];
 
   const niches = [
@@ -103,7 +100,7 @@ const ContentOptimizer = () => {
 
     } catch (error) {
       console.error('Content optimization error:', error);
-      
+
       // Fallback to algorithmic optimization if API fails
       const fallbackVersions = generateAlgorithmicOptimizations(originalContent);
       setOptimizedVersions(fallbackVersions);
@@ -122,7 +119,7 @@ const ContentOptimizer = () => {
 
   const generateAlgorithmicOptimizations = (content) => {
     const charLimit = getCurrentPlatform().charLimit;
-    
+
     // Algorithmic content enhancement strategies
     const strategies = [
       {
@@ -131,17 +128,17 @@ const ContentOptimizer = () => {
         transform: (text) => {
           // Add engagement elements based on content analysis
           let optimized = text;
-          
+
           // Add question if none exists
           if (!text.includes('?')) {
             optimized = optimized + ' What do you think?';
           }
-          
+
           // Ensure call-to-action
           if (!text.toLowerCase().includes('like') && !text.toLowerCase().includes('share') && !text.toLowerCase().includes('comment')) {
             optimized = optimized + ' 👍 Like if you agree!';
           }
-          
+
           return optimized.length <= charLimit ? optimized : text;
         }
       },
@@ -157,16 +154,16 @@ const ContentOptimizer = () => {
             marketing: ['#Marketing', '#Growth', '#DigitalMarketing', '#Content'],
             startup: ['#Startup', '#Entrepreneur', '#Innovation', '#Business']
           };
-          
+
           const hashtags = nicheHashtags[niche] || nicheHashtags.tech;
           const selectedHashtags = hashtags.slice(0, platform === 'twitter' ? 2 : 5);
-          
+
           let optimized = text;
           // Only add if no hashtags exist
           if (!text.includes('#')) {
             optimized = text + ' ' + selectedHashtags.join(' ');
           }
-          
+
           return optimized.length <= charLimit ? optimized : text;
         }
       },
@@ -175,7 +172,7 @@ const ContentOptimizer = () => {
         description: 'Shortened for maximum impact',
         transform: (text) => {
           if (text.length <= charLimit * 0.7) return text;
-          
+
           // Intelligent text shortening
           const sentences = text.split('.').filter(s => s.trim());
           if (sentences.length > 1) {
@@ -185,7 +182,7 @@ const ContentOptimizer = () => {
               return firstSentence;
             }
           }
-          
+
           // Fallback: truncate smartly
           const truncated = text.substring(0, charLimit - 3) + '...';
           return truncated;
@@ -196,29 +193,12 @@ const ContentOptimizer = () => {
         description: `Tailored specifically for ${getCurrentPlatform().label}`,
         transform: (text) => {
           let optimized = text;
-          
+
           // Platform-specific optimizations
-          switch (platform) {
-            case 'twitter':
-              // Twitter: Add thread indicator if long
-              if (text.length > 240) {
-                optimized = text + ' 🧵 Thread below 👇';
-              }
-              break;
-            case 'linkedin':
-              // LinkedIn: Professional tone
-              if (!text.includes('professional') && !text.includes('industry')) {
-                optimized = 'Industry insight: ' + text;
-              }
-              break;
-            case 'instagram':
-              // Instagram: Visual focus
-              if (!text.includes('📸') && !text.includes('visual')) {
-                optimized = text + ' 📸✨';
-              }
-              break;
-          }
-          
+          if (text.length > 240) {
+						optimized = text + ' 🧵 Thread below 👇';
+					}
+
           return optimized.length <= charLimit ? optimized : text;
         }
       }
@@ -238,24 +218,24 @@ const ContentOptimizer = () => {
 
   const calculateContentScore = (content) => {
     let score = 50; // Base score
-    
+
     // Content analysis factors
     if (content.includes('?')) score += 10; // Engagement question
     if (content.includes('#')) score += 10; // Hashtags
     if (content.includes('!')) score += 5;  // Excitement
     if (content.match(/\d+/)) score += 5;   // Numbers/stats
     if (content.length >= 50 && content.length <= 200) score += 10; // Optimal length
-    
+
     // Platform-specific bonuses
     const charLimit = getCurrentPlatform().charLimit;
     if (content.length <= charLimit * 0.8) score += 5; // Under char limit
-    
+
     return Math.min(100, score);
   };
 
   const generateImprovements = (original, optimized) => {
     const improvements = [];
-    
+
     if (optimized.includes('?') && !original.includes('?')) {
       improvements.push('Added engagement question');
     }
@@ -268,7 +248,7 @@ const ContentOptimizer = () => {
     if (optimized.includes('👍') || optimized.includes('like')) {
       improvements.push('Added call-to-action');
     }
-    
+
     return improvements.length > 0 ? improvements : ['Optimized for platform requirements'];
   };
 
@@ -300,7 +280,7 @@ const ContentOptimizer = () => {
                 rows={6}
                 resize="vertical"
               />
-              
+
               <HStack width="full" spacing={4}>
                 <Select value={platform} onChange={(e) => setPlatform(e.target.value)} flex={1}>
                   {platforms.map(p => (
@@ -309,7 +289,7 @@ const ContentOptimizer = () => {
                     </option>
                   ))}
                 </Select>
-                
+
                 <Select value={niche} onChange={(e) => setNiche(e.target.value)} flex={1}>
                   {niches.map(n => (
                     <option key={n.value} value={n.value}>{n.label}</option>

@@ -41,10 +41,7 @@ const HashtagOptimizer = () => {
 
   const platforms = [
     { value: 'twitter', label: 'X/Twitter', limit: 10, optimal: '2-3' },
-    { value: 'instagram', label: 'Instagram', limit: 30, optimal: '11-20' },
-    { value: 'linkedin', label: 'LinkedIn', limit: 5, optimal: '3-5' },
-    { value: 'tiktok', label: 'TikTok', limit: 100, optimal: '3-5' },
-    { value: 'youtube', label: 'YouTube', limit: 15, optimal: '10-15' },
+    
   ];
 
   const niches = [
@@ -95,7 +92,7 @@ const HashtagOptimizer = () => {
 
     } catch (error) {
       console.error('Hashtag analysis error:', error);
-      
+
       // Fallback to algorithmic analysis
       const fallbackAnalysis = generateAlgorithmicHashtagAnalysis(topic, platform, niche);
       setHashtagData(fallbackAnalysis);
@@ -135,7 +132,7 @@ const HashtagOptimizer = () => {
         const relevanceScore = calculateRelevanceScore(topic, hashtag, niche);
         const popularityScore = calculatePopularityScore(hashtag, trendingTopics);
         const competitionScore = calculateCompetitionScore(hashtag);
-        
+
         return {
           hashtag: `#${hashtag}`,
           relevance: relevanceScore,
@@ -177,13 +174,13 @@ const HashtagOptimizer = () => {
 
   const calculateRelevanceScore = (topic, hashtag, niche) => {
     let score = 30; // Base relevance
-    
+
     // Direct topic match
-    if (topic.toLowerCase().includes(hashtag.toLowerCase()) || 
+    if (topic.toLowerCase().includes(hashtag.toLowerCase()) ||
         hashtag.toLowerCase().includes(topic.toLowerCase())) {
       score += 40;
     }
-    
+
     // Niche relevance
     const nicheKeywords = {
       crypto: ['bitcoin', 'crypto', 'defi', 'blockchain', 'eth', 'btc'],
@@ -198,27 +195,27 @@ const HashtagOptimizer = () => {
     if (keywords.some(keyword => hashtag.toLowerCase().includes(keyword))) {
       score += 20;
     }
-    
+
     return Math.min(100, score);
   };
 
   const calculatePopularityScore = (hashtag, trendingTopics) => {
     // Check if hashtag matches trending topics
-    const trendingMatch = trendingTopics.find(t => 
+    const trendingMatch = trendingTopics.find(t =>
       t.name.toLowerCase().includes(hashtag.toLowerCase()) ||
       hashtag.toLowerCase().includes(t.name.toLowerCase())
     );
-    
+
     if (trendingMatch) {
       return Math.round(trendingMatch.sentiment * 100);
     }
-    
+
     // Base popularity estimation
     const popularityMap = {
       'bitcoin': 90, 'crypto': 85, 'ai': 88, 'tech': 75, 'business': 70,
       'marketing': 65, 'startup': 68, 'innovation': 72, 'defi': 80, 'web3': 78
     };
-    
+
     return popularityMap[hashtag.toLowerCase()] || 50;
   };
 
@@ -226,7 +223,7 @@ const HashtagOptimizer = () => {
     // Estimate competition based on hashtag popularity
     const highCompetition = ['bitcoin', 'crypto', 'ai', 'tech', 'business', 'marketing'];
     const mediumCompetition = ['defi', 'web3', 'startup', 'innovation', 'blockchain'];
-    
+
     if (highCompetition.includes(hashtag.toLowerCase())) return 85;
     if (mediumCompetition.includes(hashtag.toLowerCase())) return 60;
     return 40;
@@ -272,7 +269,7 @@ const HashtagOptimizer = () => {
                 onChange={(e) => setTopic(e.target.value)}
                 size="lg"
               />
-              
+
               <HStack width="full" spacing={4}>
                 <Select value={platform} onChange={(e) => setPlatform(e.target.value)} flex={1}>
                   {platforms.map(p => (
@@ -281,7 +278,7 @@ const HashtagOptimizer = () => {
                     </option>
                   ))}
                 </Select>
-                
+
                 <Select value={niche} onChange={(e) => setNiche(e.target.value)} flex={1}>
                   {niches.map(n => (
                     <option key={n.value} value={n.value}>{n.label}</option>
@@ -379,7 +376,7 @@ const HashtagOptimizer = () => {
                         <Tr key={index}>
                           <Td fontWeight="bold" color="blue.600">{rec.hashtag}</Td>
                           <Td>
-                            <Badge 
+                            <Badge
                               colorScheme={
                                 rec.overallScore >= 80 ? 'green' :
                                 rec.overallScore >= 60 ? 'yellow' : 'orange'

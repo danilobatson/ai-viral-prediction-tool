@@ -40,10 +40,7 @@ const TimingOptimizer = () => {
 
   const platforms = [
     { value: 'x', label: 'X (Twitter)' },
-    { value: 'instagram', label: 'Instagram' },
-    { value: 'tiktok', label: 'TikTok' },
-    { value: 'linkedin', label: 'LinkedIn' },
-    { value: 'youtube', label: 'YouTube' },
+   
   ];
 
   const contentTypes = [
@@ -60,7 +57,7 @@ const TimingOptimizer = () => {
 
     try {
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       setAnalysis({
         bestTime: '2:00 PM',
         bestDay: 'Tuesday',
