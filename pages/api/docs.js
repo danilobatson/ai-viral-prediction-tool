@@ -9,9 +9,10 @@ export default function handler(req, res) {
 	}
 
 	const documentation = {
-		title: 'AI Viral Prediction API',
+		title: 'AI Viral Probability Analysis API',
 		version: '3.1.0',
-		description: 'High-accuracy viral prediction API with ML integration',
+		description:
+			'Advanced viral probability estimation API with ML integration',
 		baseUrl:
 			process.env.NODE_ENV === 'production'
 				? 'https://your-domain.com/api'

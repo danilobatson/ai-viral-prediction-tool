@@ -38,23 +38,23 @@ const ViralPredictor = () => {
   const [platform, setPlatform] = useState('x');
   const [niche, setNiche] = useState('general');
   const [username, setUsername] = useState('');
-  
+
   // Text content fields
   const [textContent, setTextContent] = useState('');
-  
+
   // Image content fields
   const [imageCaption, setImageCaption] = useState('');
   const [imageHashtags, setImageHashtags] = useState('');
-  
+
   // Video content fields
   const [videoTitle, setVideoTitle] = useState('');
   const [videoDescription, setVideoDescription] = useState('');
   const [videoHashtags, setVideoHashtags] = useState('');
-  
+
   // Story content fields
   const [storyText, setStoryText] = useState('');
   const [storyHashtags, setStoryHashtags] = useState('');
-  
+
   // Poll content fields
   const [pollQuestion, setPollQuestion] = useState('');
   const [pollOptions, setPollOptions] = useState('');
@@ -78,43 +78,43 @@ const ViralPredictor = () => {
   ];
 
   const contentTypes = [
-    { 
-      value: 'text', 
+    {
+      value: 'text',
       label: '📝 Text Post',
       description: 'Regular text posts, tweets, status updates'
     },
-    { 
-      value: 'image', 
+    {
+      value: 'image',
       label: '📸 Image Post',
       description: 'Posts with images + captions'
     },
-    { 
-      value: 'video', 
+    {
+      value: 'video',
       label: '🎥 Video Content',
       description: 'YouTube videos, TikToks, Reels'
     },
-    { 
-      value: 'story', 
+    {
+      value: 'story',
       label: '📱 Story/Short',
       description: 'Stories, Shorts, ephemeral content'
     },
-    { 
-      value: 'poll', 
+    {
+      value: 'poll',
       label: '📊 Poll/Question',
       description: 'Interactive polls and questions'
     },
-    { 
-      value: 'thread', 
+    {
+      value: 'thread',
       label: '🧵 Thread/Series',
       description: 'Twitter threads, LinkedIn carousels'
     },
-    { 
-      value: 'live', 
+    {
+      value: 'live',
       label: '🔴 Live Content',
       description: 'Live streams, Twitter Spaces'
     },
-    { 
-      value: 'other', 
+    {
+      value: 'other',
       label: '❓ Other',
       description: 'Custom content type'
     },
@@ -129,7 +129,7 @@ const ViralPredictor = () => {
     { value: 'web3', label: '🌐 Web3 & DeFi', category: 'Technology' },
     { value: 'cybersecurity', label: '🔒 Cybersecurity', category: 'Technology' },
     { value: 'data', label: '📊 Data Science & Analytics', category: 'Technology' },
-    
+
     // Business & Finance
     { value: 'business', label: '💼 Business & Entrepreneurship', category: 'Business' },
     { value: 'finance', label: '💰 Finance & Investing', category: 'Business' },
@@ -137,7 +137,7 @@ const ViralPredictor = () => {
     { value: 'ecommerce', label: '🛍️ E-commerce & Retail', category: 'Business' },
     { value: 'startup', label: '🚀 Startups & Innovation', category: 'Business' },
     { value: 'realestate', label: '🏠 Real Estate', category: 'Business' },
-    
+
     // Lifestyle & Entertainment
     { value: 'lifestyle', label: '✨ Lifestyle & Wellness', category: 'Lifestyle' },
     { value: 'fitness', label: '💪 Fitness & Health', category: 'Lifestyle' },
@@ -145,24 +145,24 @@ const ViralPredictor = () => {
     { value: 'travel', label: '✈️ Travel & Adventure', category: 'Lifestyle' },
     { value: 'fashion', label: '👗 Fashion & Beauty', category: 'Lifestyle' },
     { value: 'entertainment', label: '🎬 Entertainment & Media', category: 'Lifestyle' },
-    
+
     // Creative & Education
     { value: 'education', label: '📚 Education & Learning', category: 'Education' },
     { value: 'design', label: '🎨 Design & Creativity', category: 'Creative' },
     { value: 'music', label: '🎵 Music & Audio', category: 'Creative' },
     { value: 'writing', label: '✍️ Writing & Content', category: 'Creative' },
     { value: 'photography', label: '📷 Photography & Visual', category: 'Creative' },
-    
+
     // Gaming & Sports
     { value: 'gaming', label: '🎮 Gaming & Esports', category: 'Gaming' },
     { value: 'sports', label: '⚽ Sports & Athletics', category: 'Sports' },
     { value: 'nft', label: '🖼️ NFTs & Digital Art', category: 'Gaming' },
-    
+
     // News & Politics
     { value: 'news', label: '📰 News & Current Events', category: 'News' },
     { value: 'politics', label: '🏛️ Politics & Policy', category: 'News' },
     { value: 'science', label: '🔬 Science & Research', category: 'Education' },
-    
+
     // Other
     { value: 'general', label: '🌟 General/Mixed Content', category: 'General' },
     { value: 'other', label: '❓ Other/Not Listed', category: 'General' },
@@ -171,7 +171,7 @@ const ViralPredictor = () => {
   const predictViral = async () => {
     // Combine all content based on type
     let combinedContent = '';
-    
+
     switch (contentType) {
       case 'text':
         combinedContent = textContent;
@@ -240,9 +240,9 @@ const ViralPredictor = () => {
           niche,
           timestamp: new Date().toISOString(),
         };
-        
+
         setPrediction(predictionResult);
-        
+
         // Save to prediction history
         if (window.addPredictionToHistory) {
           window.addPredictionToHistory(predictionResult);
@@ -265,12 +265,12 @@ const ViralPredictor = () => {
   };
 
   const getViralLabel = (confidence) => {
-    if (confidence >= 90) return 'Extremely Viral';
-    if (confidence >= 80) return 'High Viral Potential';
-    if (confidence >= 60) return 'Moderate Potential';
-    if (confidence >= 40) return 'Low Potential';
-    return 'Unlikely to Go Viral';
-  };
+		if (confidence >= 90) return 'High Viral Probability';
+		if (confidence >= 80) return 'Moderate-High Probability';
+		if (confidence >= 60) return 'Moderate Probability';
+		if (confidence >= 40) return 'Low-Moderate Probability';
+		return 'Low Viral Probability';
+	};
 
   const getPlatformSupport = () => {
     const platformData = platforms.find(p => p.value === platform);
@@ -279,7 +279,7 @@ const ViralPredictor = () => {
 
   const renderContentFields = () => {
     const selectedType = contentTypes.find(ct => ct.value === contentType);
-    
+
     switch (contentType) {
       case 'text':
       case 'thread':
@@ -296,7 +296,7 @@ const ViralPredictor = () => {
               value={textContent}
               onChange={(e) => setTextContent(e.target.value)}
               placeholder={
-                contentType === 'thread' ? 
+                contentType === 'thread' ?
                   "Enter your thread content... \n\n1/ First tweet in thread\n2/ Second tweet content\n3/ Final tweet with CTA..." :
                 contentType === 'live' ?
                   "Describe your live content... \n\nExample: 'Going live to discuss the latest AI developments and answer your questions! 🤖'" :
@@ -431,275 +431,330 @@ const ViralPredictor = () => {
   };
 
   return (
-    <Box maxW="4xl" mx="auto">
-      <VStack spacing={6} align="stretch">
-        <Tabs variant="soft-rounded" colorScheme="purple">
-          <TabList>
-            <Tab>📝 Content Setup</Tab>
-            <Tab>🎯 Advanced Options</Tab>
-          </TabList>
+		<Box maxW='4xl' mx='auto'>
+			<VStack spacing={6} align='stretch'>
+				<Tabs variant='soft-rounded' colorScheme='purple'>
+					<TabList>
+						<Tab>📝 Content Setup</Tab>
+						<Tab>🎯 Advanced Options</Tab>
+					</TabList>
 
-          <TabPanels>
-            {/* Main Content Tab */}
-            <TabPanel>
-              <VStack spacing={6} align="stretch">
-                {/* Platform & Type Selection */}
-                <Card bg={cardBg} borderRadius="lg">
-                  <CardBody>
-                    <VStack spacing={4} align="stretch">
-                      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                        <FormControl>
-                          <FormLabel fontWeight="bold">Platform</FormLabel>
-                          <Select 
-                            value={platform} 
-                            onChange={(e) => setPlatform(e.target.value)}
-                            size="lg"
-                          >
-                            {platforms.map(p => (
-                              <option key={p.value} value={p.value}>
-                                {p.label} {p.supported ? '✓' : '(Analysis Only)'}
-                              </option>
-                            ))}
-                          </Select>
-                          <FormHelperText>
-                            <Badge 
-                              colorScheme={getPlatformSupport().supported ? 'green' : 'orange'}
-                              size="sm"
-                            >
-                              {getPlatformSupport().note}
-                            </Badge>
-                          </FormHelperText>
-                        </FormControl>
+					<TabPanels>
+						{/* Main Content Tab */}
+						<TabPanel>
+							<VStack spacing={6} align='stretch'>
+								{/* Platform & Type Selection */}
+								<Card bg={cardBg} borderRadius='lg'>
+									<CardBody>
+										<VStack spacing={4} align='stretch'>
+											<SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+												<FormControl>
+													<FormLabel fontWeight='bold'>Platform</FormLabel>
+													<Select
+														value={platform}
+														onChange={(e) => setPlatform(e.target.value)}
+														size='lg'>
+														{platforms.map((p) => (
+															<option key={p.value} value={p.value}>
+																{p.label}{' '}
+																{p.supported ? '✓' : '(Analysis Only)'}
+															</option>
+														))}
+													</Select>
+													<FormHelperText>
+														<Badge
+															colorScheme={
+																getPlatformSupport().supported
+																	? 'green'
+																	: 'orange'
+															}
+															size='sm'>
+															{getPlatformSupport().note}
+														</Badge>
+													</FormHelperText>
+												</FormControl>
 
-                        <FormControl>
-                          <FormLabel fontWeight="bold">Content Type</FormLabel>
-                          <Select 
-                            value={contentType} 
-                            onChange={(e) => setContentType(e.target.value)}
-                            size="lg"
-                          >
-                            {contentTypes.map(ct => (
-                              <option key={ct.value} value={ct.value}>{ct.label}</option>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </SimpleGrid>
+												<FormControl>
+													<FormLabel fontWeight='bold'>Content Type</FormLabel>
+													<Select
+														value={contentType}
+														onChange={(e) => setContentType(e.target.value)}
+														size='lg'>
+														{contentTypes.map((ct) => (
+															<option key={ct.value} value={ct.value}>
+																{ct.label}
+															</option>
+														))}
+													</Select>
+												</FormControl>
+											</SimpleGrid>
 
-                      <FormControl>
-                        <FormLabel fontWeight="bold">Content Niche</FormLabel>
-                        <Select 
-                          value={niche} 
-                          onChange={(e) => setNiche(e.target.value)}
-                          size="lg"
-                        >
-                          {Object.entries(
-                            niches.reduce((acc, niche) => {
-                              if (!acc[niche.category]) acc[niche.category] = [];
-                              acc[niche.category].push(niche);
-                              return acc;
-                            }, {})
-                          ).map(([category, items]) => (
-                            <optgroup key={category} label={category}>
-                              {items.map(item => (
-                                <option key={item.value} value={item.value}>
-                                  {item.label}
-                                </option>
-                              ))}
-                            </optgroup>
-                          ))}
-                        </Select>
-                        <FormHelperText>
-                          Choose the category that best matches your content for more accurate predictions
-                        </FormHelperText>
-                      </FormControl>
-                    </VStack>
-                  </CardBody>
-                </Card>
+											<FormControl>
+												<FormLabel fontWeight='bold'>Content Niche</FormLabel>
+												<Select
+													value={niche}
+													onChange={(e) => setNiche(e.target.value)}
+													size='lg'>
+													{Object.entries(
+														niches.reduce((acc, niche) => {
+															if (!acc[niche.category])
+																acc[niche.category] = [];
+															acc[niche.category].push(niche);
+															return acc;
+														}, {})
+													).map(([category, items]) => (
+														<optgroup key={category} label={category}>
+															{items.map((item) => (
+																<option key={item.value} value={item.value}>
+																	{item.label}
+																</option>
+															))}
+														</optgroup>
+													))}
+												</Select>
+												<FormHelperText>
+													Choose the category that best matches your content for
+													more accurate predictions
+												</FormHelperText>
+											</FormControl>
+										</VStack>
+									</CardBody>
+								</Card>
 
-                {/* Content Input */}
-                <Card bg={cardBg} borderRadius="lg">
-                  <CardBody>
-                    <VStack spacing={4} align="stretch">
-                      <Heading size="md">
-                        {contentTypes.find(ct => ct.value === contentType)?.label} Details
-                      </Heading>
-                      
-                      {renderContentFields()}
+								{/* Content Input */}
+								<Card bg={cardBg} borderRadius='lg'>
+									<CardBody>
+										<VStack spacing={4} align='stretch'>
+											<Heading size='md'>
+												{
+													contentTypes.find((ct) => ct.value === contentType)
+														?.label
+												}{' '}
+												Details
+											</Heading>
 
-                      <Button
-                        colorScheme="purple"
-                        size="lg"
-                        onClick={predictViral}
-                        isLoading={loading}
-                        loadingText="Analyzing with AI + MCP..."
-                        mt={4}
-                      >
-                        🚀 Predict Viral Potential
-                      </Button>
-                    </VStack>
-                  </CardBody>
-                </Card>
-              </VStack>
-            </TabPanel>
+											{renderContentFields()}
 
-            {/* Advanced Options Tab */}
-            <TabPanel>
-              <VStack spacing={6} align="stretch">
-                <Card bg={cardBg} borderRadius="lg">
-                  <CardBody>
-                    <VStack spacing={4} align="stretch">
-                      <Heading size="md">🎯 Enhanced Analysis Options</Heading>
-                      
-                      <FormControl>
-                        <FormLabel fontWeight="bold">Your Username (Optional)</FormLabel>
-                        <Input
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
-                          placeholder="your_username"
-                        />
-                        <FormHelperText>
-                          Provide your username for personalized analysis based on your follower metrics (MCP-supported platforms only)
-                        </FormHelperText>
-                      </FormControl>
+											<Button
+												colorScheme='purple'
+												size='lg'
+												onClick={predictViral}
+												isLoading={loading}
+												loadingText='Estimating probability with AI...'
+												mt={4}>
+												🚀 Analyze Viral Probability
+											</Button>
+										</VStack>
+									</CardBody>
+								</Card>
+							</VStack>
+						</TabPanel>
 
-                      <Box bg="blue.50" p={4} borderRadius="md">
-                        <Text fontSize="sm" fontWeight="bold" color="blue.700" mb={2}>
-                          💡 Pro Tip: Username Analysis
-                        </Text>
-                        <Text fontSize="xs" color="blue.600">
-                          When you provide your username on MCP-supported platforms (X, Reddit, YouTube), 
-                          we can analyze your actual follower metrics for more accurate viral predictions!
-                        </Text>
-                      </Box>
-                    </VStack>
-                  </CardBody>
-                </Card>
-              </VStack>
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
+						{/* Advanced Options Tab */}
+						<TabPanel>
+							<VStack spacing={6} align='stretch'>
+								<Card bg={cardBg} borderRadius='lg'>
+									<CardBody>
+										<VStack spacing={4} align='stretch'>
+											<Heading size='md'>🎯 Enhanced Analysis Options</Heading>
 
-        {/* Error Alert */}
-        {error && (
-          <Alert status="error" borderRadius="lg">
-            <AlertIcon />
-            {error}
-          </Alert>
-        )}
+											<FormControl>
+												<FormLabel fontWeight='bold'>
+													Your Username (Optional)
+												</FormLabel>
+												<Input
+													value={username}
+													onChange={(e) => setUsername(e.target.value)}
+													placeholder='your_username'
+												/>
+												<FormHelperText>
+													Provide your username for personalized analysis based
+													on your follower metrics (MCP-supported platforms
+													only)
+												</FormHelperText>
+											</FormControl>
 
-        {/* Loading State */}
-        {loading && (
-          <Card bg={cardBg} borderRadius="lg">
-            <CardBody>
-              <VStack spacing={4}>
-                <Spinner size="xl" color="purple.500" />
-                <VStack spacing={2}>
-                  <Text fontWeight="bold">🤖 AI Analysis in Progress</Text>
-                  <Text fontSize="sm" color="gray.600" textAlign="center">
-                    • Accessing {getPlatformSupport().supported ? 'real-time MCP data' : 'platform analysis'}<br/>
-                    • Running Gemini 2.0 Flash Lite analysis<br/>
-                    • Calculating viral probability for {niches.find(n => n.value === niche)?.label}
-                  </Text>
-                </VStack>
-                <Progress size="lg" colorScheme="purple" isIndeterminate w="100%" />
-              </VStack>
-            </CardBody>
-          </Card>
-        )}
+											<Box bg='blue.50' p={4} borderRadius='md'>
+												<Text
+													fontSize='sm'
+													fontWeight='bold'
+													color='blue.700'
+													mb={2}>
+													💡 Pro Tip: Username Analysis
+												</Text>
+												<Text fontSize='xs' color='blue.600'>
+													When you provide your username on MCP-supported
+													platforms (X, Reddit, YouTube), we can analyze your
+													actual follower metrics for more accurate viral
+													predictions!
+												</Text>
+											</Box>
+										</VStack>
+									</CardBody>
+								</Card>
+							</VStack>
+						</TabPanel>
+					</TabPanels>
+				</Tabs>
 
-        {/* Prediction Results */}
-        {prediction && (
-          <Card bg={cardBg} borderRadius="lg" borderWidth="2px" borderColor={borderColor}>
-            <CardBody>
-              <VStack spacing={6} align="stretch">
-                {/* Main Prediction Score */}
-                <Box textAlign="center">
-                  <Badge 
-                    fontSize="lg" 
-                    p={3} 
-                    borderRadius="full" 
-                    colorScheme={getConfidenceColor(prediction.confidence)}
-                  >
-                    {getViralLabel(prediction.confidence)}
-                  </Badge>
-                  <Heading size="2xl" mt={2} color={`${getConfidenceColor(prediction.confidence)}.500`}>
-                    {prediction.confidence}%
-                  </Heading>
-                  <Text color="gray.600" mt={2}>
-                    Viral Probability Score
-                  </Text>
-                  <Progress
-                    value={prediction.confidence}
-                    size="lg"
-                    colorScheme={getConfidenceColor(prediction.confidence)}
-                    mt={4}
-                    borderRadius="full"
-                  />
-                </Box>
+				{/* Error Alert */}
+				{error && (
+					<Alert status='error' borderRadius='lg'>
+						<AlertIcon />
+						{error}
+					</Alert>
+				)}
 
-                <Divider />
+				{/* Loading State */}
+				{loading && (
+					<Card bg={cardBg} borderRadius='lg'>
+						<CardBody>
+							<VStack spacing={4}>
+								<Spinner size='xl' color='purple.500' />
+								<VStack spacing={2}>
+									<Text fontWeight='bold'>🤖 AI Analysis in Progress</Text>
+									<Text fontSize='sm' color='gray.600' textAlign='center'>
+										• Accessing{' '}
+										{getPlatformSupport().supported
+											? 'real-time MCP data'
+											: 'platform analysis'}
+										<br />
+										• Running Gemini 2.0 Flash Lite analysis
+										<br />• Calculating viral probability for{' '}
+										{niches.find((n) => n.value === niche)?.label}
+									</Text>
+								</VStack>
+								<Progress
+									size='lg'
+									colorScheme='purple'
+									isIndeterminate
+									w='100%'
+								/>
+							</VStack>
+						</CardBody>
+					</Card>
+				)}
 
-                {/* Detailed Metrics */}
-                <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
-                  <Stat textAlign="center">
-                    <StatLabel>Platform Fit</StatLabel>
-                    <StatNumber fontSize="2xl">
-                      {prediction.platformFit || Math.floor(prediction.confidence * 0.9)}%
-                    </StatNumber>
-                    <StatHelpText>{getPlatformSupport().label}</StatHelpText>
-                  </Stat>
+				{/* Prediction Results */}
+				{prediction && (
+					<Card
+						bg={cardBg}
+						borderRadius='lg'
+						borderWidth='2px'
+						borderColor={borderColor}>
+						<CardBody>
+							<VStack spacing={6} align='stretch'>
+								{/* Main Prediction Score */}
+								<Box textAlign='center'>
+									<Badge
+										fontSize='lg'
+										p={3}
+										borderRadius='full'
+										colorScheme={getConfidenceColor(prediction.confidence)}>
+										{getViralLabel(prediction.confidence)}
+									</Badge>
+									<Heading
+										size='2xl'
+										mt={2}
+										color={`${getConfidenceColor(prediction.confidence)}.500`}>
+										{prediction.confidence}%
+									</Heading>
+									<Text color='gray.600' mt={2}>
+										Estimated Viral Probability
+									</Text>
+									<Progress
+										value={prediction.confidence}
+										size='lg'
+										colorScheme={getConfidenceColor(prediction.confidence)}
+										mt={4}
+										borderRadius='full'
+									/>
+								</Box>
 
-                  <Stat textAlign="center">
-                    <StatLabel>Niche Relevance</StatLabel>
-                    <StatNumber fontSize="2xl">
-                      {Math.floor(prediction.confidence * 0.85)}%
-                    </StatNumber>
-                    <StatHelpText>{niches.find(n => n.value === niche)?.label}</StatHelpText>
-                  </Stat>
+								<Divider />
 
-                  <Stat textAlign="center">
-                    <StatLabel>Content Type</StatLabel>
-                    <StatNumber fontSize="2xl">
-                      {Math.floor(prediction.confidence * 0.95)}%
-                    </StatNumber>
-                    <StatHelpText>{contentTypes.find(ct => ct.value === contentType)?.label}</StatHelpText>
-                  </Stat>
+								{/* Detailed Metrics */}
+								<SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+									<Stat textAlign='center'>
+										<StatLabel>Platform Fit</StatLabel>
+										<StatNumber fontSize='2xl'>
+											{prediction.platformFit ||
+												Math.floor(prediction.confidence * 0.9)}
+											%
+										</StatNumber>
+										<StatHelpText>{getPlatformSupport().label}</StatHelpText>
+									</Stat>
 
-                  <Stat textAlign="center">
-                    <StatLabel>Data Source</StatLabel>
-                    <StatNumber fontSize="lg">
-                      {getPlatformSupport().supported ? 'MCP' : 'Analysis'}
-                    </StatNumber>
-                    <StatHelpText>{getPlatformSupport().note}</StatHelpText>
-                  </Stat>
-                </SimpleGrid>
+									<Stat textAlign='center'>
+										<StatLabel>Niche Relevance</StatLabel>
+										<StatNumber fontSize='2xl'>
+											{Math.floor(prediction.confidence * 0.85)}%
+										</StatNumber>
+										<StatHelpText>
+											{niches.find((n) => n.value === niche)?.label}
+										</StatHelpText>
+									</Stat>
 
-                {/* AI Analysis */}
-                {prediction.aiAnalysis && (
-                  <Box>
-                    <Heading size="md" mb={3}>🤖 Gemini AI Analysis</Heading>
-                    <Text bg="purple.50" p={4} borderRadius="md" fontSize="sm">
-                      {prediction.aiAnalysis}
-                    </Text>
-                  </Box>
-                )}
+									<Stat textAlign='center'>
+										<StatLabel>Content Type</StatLabel>
+										<StatNumber fontSize='2xl'>
+											{Math.floor(prediction.confidence * 0.95)}%
+										</StatNumber>
+										<StatHelpText>
+											{
+												contentTypes.find((ct) => ct.value === contentType)
+													?.label
+											}
+										</StatHelpText>
+									</Stat>
 
-                {/* Metadata */}
-                <Box fontSize="xs" color="gray.500" textAlign="center" bg="gray.50" p={3} borderRadius="md">
-                  <Text>
-                    Analysis completed at {new Date(prediction.timestamp).toLocaleString()}
-                  </Text>
-                  <Text mt={1}>
-                    Powered by Google Gemini 2.0 Flash Lite + {getPlatformSupport().supported ? 'LunarCrush MCP Protocol' : 'Platform Analysis'}
-                  </Text>
-                </Box>
-              </VStack>
-            </CardBody>
-          </Card>
-        )}
-      </VStack>
-    </Box>
-  );
+									<Stat textAlign='center'>
+										<StatLabel>Data Source</StatLabel>
+										<StatNumber fontSize='lg'>
+											{getPlatformSupport().supported ? 'MCP' : 'Analysis'}
+										</StatNumber>
+										<StatHelpText>{getPlatformSupport().note}</StatHelpText>
+									</Stat>
+								</SimpleGrid>
+
+								{/* AI Analysis */}
+								{prediction.aiAnalysis && (
+									<Box>
+										<Heading size='md' mb={3}>
+											🤖 Gemini AI Analysis
+										</Heading>
+										<Text bg='purple.50' p={4} borderRadius='md' fontSize='sm'>
+											{prediction.aiAnalysis}
+										</Text>
+									</Box>
+								)}
+
+								{/* Metadata */}
+								<Box
+									fontSize='xs'
+									color='gray.500'
+									textAlign='center'
+									bg='gray.50'
+									p={3}
+									borderRadius='md'>
+									<Text>
+										Analysis completed at{' '}
+										{new Date(prediction.timestamp).toLocaleString()}
+									</Text>
+									<Text mt={1}>
+										Powered by Google Gemini 2.0 Flash Lite +{' '}
+										{getPlatformSupport().supported
+											? 'LunarCrush MCP Protocol'
+											: 'Platform Analysis'}
+									</Text>
+								</Box>
+							</VStack>
+						</CardBody>
+					</Card>
+				)}
+			</VStack>
+		</Box>
+	);
 };
 
 export default ViralPredictor;

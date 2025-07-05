@@ -376,10 +376,11 @@ const BatchAnalysis = () => {
 				{/* Header */}
 				<Box textAlign='center'>
 					<Heading size='lg' mb={2}>
-						📊 Batch Analysis Tool
+						📊 Batch Probability Analysis
 					</Heading>
 					<Text color='gray.600'>
-						Analyze multiple posts simultaneously using real AI and MCP data
+						Estimate viral probability for multiple posts using AI and real-time
+						social data
 					</Text>
 					<Badge
 						mt={2}
