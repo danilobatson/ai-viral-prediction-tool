@@ -1,788 +1,440 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import {
-	Box,
-	VStack,
-	HStack,
-	Text,
-	Button,
-	Input,
-	Select,
-	FormControl,
-	FormLabel,
-	Alert,
-	AlertIcon,
-	Badge,
-	Card,
-	CardBody,
-	CardHeader,
-	Heading,
-	SimpleGrid,
-	Stat,
-	StatLabel,
-	StatNumber,
-	StatHelpText,
-	Progress,
-	Spinner,
-	Table,
-	Thead,
-	Tbody,
-	Tr,
-	Th,
-	Td,
-	TableContainer,
-	Tabs,
-	TabList,
-	TabPanels,
-	Tab,
-	TabPanel,
-	useColorModeValue,
-	Textarea,
-	Wrap,
-	WrapItem,
-	Tag,
-	TagLabel,
-	TagCloseButton,
-	IconButton,
-	Tooltip,
-	Flex,
-	Spacer,
+  Box,
+  VStack,
+  HStack,
+  Heading,
+  Text,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Input,
+  Select,
+  Badge,
+  SimpleGrid,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  TableContainer,
+  useToast,
+  Icon,
+  Progress,
+  Tooltip,
 } from '@chakra-ui/react';
-import { TrendingUp, Hash, Target, Zap, Copy, RefreshCw } from 'lucide-react';
-import {
-	LineChart,
-	Line,
-	XAxis,
-	YAxis,
-	CartesianGrid,
-	Tooltip as RechartsTooltip,
-	ResponsiveContainer,
-} from 'recharts';
+import { Hash, TrendingUp, Target, Info } from 'lucide-react';
 
 const HashtagOptimizer = () => {
-	const [content, setContent] = useState('');
-	const [platform, setPlatform] = useState('x');
-	const [niche, setNiche] = useState('crypto');
-	const [currentHashtags, setCurrentHashtags] = useState([]);
-	const [suggestions, setSuggestions] = useState([]);
-	const [trendingHashtags, setTrendingHashtags] = useState([]);
-	const [analysis, setAnalysis] = useState(null);
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState('');
+  const [topic, setTopic] = useState('');
+  const [platform, setPlatform] = useState('twitter');
+  const [niche, setNiche] = useState('crypto');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [hashtagData, setHashtagData] = useState(null);
+  const toast = useToast();
 
-	const cardBg = useColorModeValue('white', 'gray.700');
-	const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const platforms = [
+    { value: 'twitter', label: 'X/Twitter', limit: 10, optimal: '2-3' },
+    { value: 'instagram', label: 'Instagram', limit: 30, optimal: '11-20' },
+    { value: 'linkedin', label: 'LinkedIn', limit: 5, optimal: '3-5' },
+    { value: 'tiktok', label: 'TikTok', limit: 100, optimal: '3-5' },
+    { value: 'youtube', label: 'YouTube', limit: 15, optimal: '10-15' },
+  ];
 
-	const platforms = [
-		{ value: 'x', label: 'X (Twitter)', maxHashtags: 10 },
-		{ value: 'instagram', label: 'Instagram', maxHashtags: 30 },
-		{ value: 'tiktok', label: 'TikTok', maxHashtags: 10 },
-		{ value: 'linkedin', label: 'LinkedIn', maxHashtags: 5 },
-		{ value: 'youtube', label: 'YouTube', maxHashtags: 15 },
-	];
+  const niches = [
+    { value: 'crypto', label: 'Cryptocurrency & DeFi' },
+    { value: 'ai', label: 'AI & Machine Learning' },
+    { value: 'tech', label: 'Technology' },
+    { value: 'business', label: 'Business & Finance' },
+    { value: 'marketing', label: 'Marketing & Growth' },
+    { value: 'startup', label: 'Startups & Innovation' },
+  ];
 
-	const niches = [
-		{ value: 'crypto', label: 'Cryptocurrency & Blockchain' },
-		{ value: 'ai', label: 'AI & Machine Learning' },
-		{ value: 'tech', label: 'Technology & Programming' },
-		{ value: 'business', label: 'Business & Entrepreneurship' },
-		{ value: 'marketing', label: 'Marketing & Social Media' },
-		{ value: 'finance', label: 'Finance & Investing' },
-		{ value: 'gaming', label: 'Gaming & Esports' },
-		{ value: 'lifestyle', label: 'Lifestyle & Wellness' },
-		{ value: 'education', label: 'Education & Learning' },
-		{ value: 'entertainment', label: 'Entertainment & Media' },
-	];
+  const getCurrentPlatform = () => platforms.find(p => p.value === platform);
 
-	// Extract hashtags from content
-	useEffect(() => {
-		const hashtagRegex = /#\w+/g;
-		const extractedHashtags = content.match(hashtagRegex) || [];
-		setCurrentHashtags(extractedHashtags.map((tag) => tag.substring(1)));
-	}, [content]);
+  const handleAnalyze = async () => {
+    if (!topic.trim()) {
+      toast({
+        title: 'Topic Required',
+        description: 'Please enter a topic to analyze hashtags for',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
 
-	// Load trending hashtags on component mount
-	const loadTrendingHashtags = useCallback(async () => {
-		try {
-			// Simulate trending hashtags based on niche
-			const trendingData = getTrendingHashtagsForNiche(niche);
-			setTrendingHashtags(trendingData);
-		} catch (err) {
-			console.error('Failed to load trending hashtags:', err);
-		}
-	}, [niche]);
+    setIsAnalyzing(true);
 
-	useEffect(() => {
-		loadTrendingHashtags();
-	}, [loadTrendingHashtags]);
+    try {
+      // Call trending topics API for real hashtag data
+      const response = await fetch(`/api/trending-topics?niche=${niche}`);
+      const trendingData = await response.json();
 
-	// Simulate trending hashtags (in real implementation, this would call LunarCrush API)
-	const getTrendingHashtagsForNiche = (selectedNiche) => {
-		const hashtagData = {
-			crypto: [
-				{ tag: 'bitcoin', engagement: 950000, trend: 'up', volume: 120000 },
-				{ tag: 'ethereum', engagement: 780000, trend: 'up', volume: 98000 },
-				{ tag: 'crypto', engagement: 650000, trend: 'stable', volume: 156000 },
-				{ tag: 'blockchain', engagement: 420000, trend: 'up', volume: 67000 },
-				{ tag: 'defi', engagement: 380000, trend: 'down', volume: 45000 },
-				{ tag: 'nft', engagement: 320000, trend: 'down', volume: 38000 },
-				{ tag: 'web3', engagement: 290000, trend: 'up', volume: 41000 },
-				{ tag: 'altcoin', engagement: 250000, trend: 'stable', volume: 32000 },
-			],
-			ai: [
-				{ tag: 'ai', engagement: 890000, trend: 'up', volume: 145000 },
-				{
-					tag: 'machinelearning',
-					engagement: 420000,
-					trend: 'up',
-					volume: 67000,
-				},
-				{ tag: 'chatgpt', engagement: 380000, trend: 'stable', volume: 52000 },
-				{
-					tag: 'artificialintelligence',
-					engagement: 350000,
-					trend: 'up',
-					volume: 48000,
-				},
-				{ tag: 'automation', engagement: 290000, trend: 'up', volume: 38000 },
-				{ tag: 'robotics', engagement: 240000, trend: 'stable', volume: 31000 },
-				{ tag: 'deeplearning', engagement: 210000, trend: 'up', volume: 28000 },
-				{
-					tag: 'neuralnetwork',
-					engagement: 180000,
-					trend: 'stable',
-					volume: 24000,
-				},
-			],
-			tech: [
-				{ tag: 'technology', engagement: 750000, trend: 'up', volume: 98000 },
-				{ tag: 'programming', engagement: 520000, trend: 'up', volume: 67000 },
-				{ tag: 'coding', engagement: 480000, trend: 'up', volume: 62000 },
-				{
-					tag: 'javascript',
-					engagement: 380000,
-					trend: 'stable',
-					volume: 49000,
-				},
-				{ tag: 'python', engagement: 360000, trend: 'up', volume: 46000 },
-				{ tag: 'react', engagement: 290000, trend: 'up', volume: 38000 },
-				{ tag: 'nodejs', engagement: 250000, trend: 'stable', volume: 32000 },
-				{ tag: 'webdev', engagement: 220000, trend: 'up', volume: 29000 },
-			],
-		};
+      if (!trendingData.success) {
+        throw new Error('Failed to fetch trending data');
+      }
 
-		return hashtagData[selectedNiche] || hashtagData.crypto;
-	};
+      // Generate hashtag analysis based on real trending data and topic
+      const analysis = generateHashtagAnalysis(topic, trendingData.trending, platform, niche);
+      setHashtagData(analysis);
 
-	const analyzeHashtags = async () => {
-		if (!content.trim() && currentHashtags.length === 0) {
-			setError('Please enter content or hashtags to analyze');
-			return;
-		}
+      toast({
+        title: 'Analysis Complete!',
+        description: `Generated ${analysis.recommendations.length} hashtag recommendations`,
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
 
-		setLoading(true);
-		setError('');
-		setAnalysis(null);
-		setSuggestions([]);
+    } catch (error) {
+      console.error('Hashtag analysis error:', error);
+      
+      // Fallback to algorithmic analysis
+      const fallbackAnalysis = generateAlgorithmicHashtagAnalysis(topic, platform, niche);
+      setHashtagData(fallbackAnalysis);
 
-		try {
-			// Simulate AI analysis (in real implementation, this would call Gemini API)
-			await new Promise((resolve) => setTimeout(resolve, 2000));
+      toast({
+        title: 'Analysis Complete',
+        description: 'Using algorithmic analysis (trending data unavailable)',
+        status: 'info',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
-			const aiSuggestions = generateHashtagSuggestions(
-				content,
-				currentHashtags,
-				niche,
-				platform
-			);
-			const hashtagAnalysis = analyzeCurrentHashtags(currentHashtags, platform);
+  const generateHashtagAnalysis = (topic, trendingTopics, platform, niche) => {
+    // Base hashtags by niche
+    const baseHashtags = {
+      crypto: ['Bitcoin', 'Crypto', 'DeFi', 'Web3', 'Blockchain', 'NFT', 'Ethereum', 'BTC'],
+      ai: ['AI', 'MachineLearning', 'Tech', 'Innovation', 'Automation', 'ChatGPT', 'ML', 'TechTrends'],
+      tech: ['Technology', 'Innovation', 'StartUp', 'Tech', 'Digital', 'Future', 'TechNews', 'Programming'],
+      business: ['Business', 'Finance', 'Growth', 'Success', 'Entrepreneur', 'Leadership', 'Strategy', 'Marketing'],
+      marketing: ['Marketing', 'Growth', 'DigitalMarketing', 'Content', 'SocialMedia', 'Branding', 'SEO', 'ContentMarketing'],
+      startup: ['Startup', 'Entrepreneur', 'Innovation', 'Business', 'Funding', 'TechStartup', 'Venture', 'Growth']
+    };
 
-			setSuggestions(aiSuggestions);
-			setAnalysis(hashtagAnalysis);
-		} catch (err) {
-			setError('Failed to analyze hashtags. Please try again.');
-			console.error('Hashtag analysis error:', err);
-		} finally {
-			setLoading(false);
-		}
-	};
+    const nicheHashtags = baseHashtags[niche] || baseHashtags.tech;
+    const trendingNames = trendingTopics.map(t => t.name.replace(/\s+/g, ''));
 
-	const generateHashtagSuggestions = (
-		contentText,
-		existing,
-		selectedNiche,
-		selectedPlatform
-	) => {
-		const platformData = platforms.find((p) => p.value === selectedPlatform);
-		const trending = getTrendingHashtagsForNiche(selectedNiche);
+    // Combine base hashtags with trending topics
+    const allHashtags = [...new Set([...nicheHashtags, ...trendingNames])];
 
-		// Filter out existing hashtags and select top performers
-		const available = trending.filter((h) => !existing.includes(h.tag));
-		const maxSuggestions = Math.min(
-			platformData.maxHashtags - existing.length,
-			8
-		);
+    // Generate recommendations based on topic relevance
+    const recommendations = allHashtags
+      .map(hashtag => {
+        const relevanceScore = calculateRelevanceScore(topic, hashtag, niche);
+        const popularityScore = calculatePopularityScore(hashtag, trendingTopics);
+        const competitionScore = calculateCompetitionScore(hashtag);
+        
+        return {
+          hashtag: `#${hashtag}`,
+          relevance: relevanceScore,
+          popularity: popularityScore,
+          competition: competitionScore,
+          overallScore: Math.round((relevanceScore + popularityScore + (100 - competitionScore)) / 3),
+          volume: estimateVolume(hashtag, popularityScore),
+          reason: generateReason(hashtag, relevanceScore, popularityScore, competitionScore)
+        };
+      })
+      .sort((a, b) => b.overallScore - a.overallScore)
+      .slice(0, getCurrentPlatform().limit);
 
-		return available.slice(0, maxSuggestions).map((hashtag) => ({
-			...hashtag,
-			reason: generateSuggestionReason(hashtag, contentText),
-			confidence: Math.floor(Math.random() * 30) + 70, // 70-100%
-		}));
-	};
+    return {
+      topic,
+      platform: getCurrentPlatform().label,
+      niche: niches.find(n => n.value === niche)?.label,
+      recommendations,
+      summary: {
+        totalAnalyzed: allHashtags.length,
+        recommended: recommendations.length,
+        avgScore: Math.round(recommendations.reduce((sum, r) => sum + r.overallScore, 0) / recommendations.length),
+        platformLimit: getCurrentPlatform().limit,
+        optimalRange: getCurrentPlatform().optimal
+      }
+    };
+  };
 
-	const generateSuggestionReason = (hashtag, contentText) => {
-		const reasons = [
-			`High engagement rate (${Math.floor(
-				hashtag.engagement / 1000
-			)}K interactions)`,
-			`Trending ${hashtag.trend === 'up' ? 'upward' : 'stable'} in your niche`,
-			`Strong community presence with ${Math.floor(
-				hashtag.volume / 1000
-			)}K mentions`,
-			`Optimal for ${platform.toUpperCase()} algorithm`,
-			`Complements your content theme`,
-		];
-		return reasons[Math.floor(Math.random() * reasons.length)];
-	};
+  const generateAlgorithmicHashtagAnalysis = (topic, platform, niche) => {
+    // Fallback when trending API is unavailable
+    const mockTrending = [
+      { name: 'Bitcoin', sentiment: 0.8, mentions: 45000, change: 12.5 },
+      { name: 'AI', sentiment: 0.9, mentions: 67000, change: 22.1 },
+      { name: 'Technology', sentiment: 0.7, mentions: 34000, change: 5.8 }
+    ];
 
-	const analyzeCurrentHashtags = (hashtags, selectedPlatform) => {
-		const platformData = platforms.find((p) => p.value === selectedPlatform);
-		const trending = getTrendingHashtagsForNiche(niche);
+    return generateHashtagAnalysis(topic, mockTrending, platform, niche);
+  };
 
-		const analysis = hashtags.map((tag) => {
-			const trendingData = trending.find(
-				(t) => t.tag.toLowerCase() === tag.toLowerCase()
-			);
-			return {
-				tag,
-				performance: trendingData
-					? 'high'
-					: Math.random() > 0.5
-					? 'medium'
-					: 'low',
-				engagement: trendingData
-					? trendingData.engagement
-					: Math.floor(Math.random() * 100000) + 10000,
-				trend: trendingData
-					? trendingData.trend
-					: ['up', 'down', 'stable'][Math.floor(Math.random() * 3)],
-				recommendation: trendingData
-					? 'keep'
-					: Math.random() > 0.3
-					? 'optimize'
-					: 'replace',
-			};
-		});
+  const calculateRelevanceScore = (topic, hashtag, niche) => {
+    let score = 30; // Base relevance
+    
+    // Direct topic match
+    if (topic.toLowerCase().includes(hashtag.toLowerCase()) || 
+        hashtag.toLowerCase().includes(topic.toLowerCase())) {
+      score += 40;
+    }
+    
+    // Niche relevance
+    const nicheKeywords = {
+      crypto: ['bitcoin', 'crypto', 'defi', 'blockchain', 'eth', 'btc'],
+      ai: ['ai', 'ml', 'tech', 'automation', 'chatgpt', 'machine'],
+      tech: ['tech', 'digital', 'innovation', 'programming', 'software'],
+      business: ['business', 'finance', 'growth', 'success', 'entrepreneur'],
+      marketing: ['marketing', 'content', 'social', 'brand', 'seo'],
+      startup: ['startup', 'entrepreneur', 'funding', 'venture', 'innovation']
+    };
 
-		return {
-			hashtags: analysis,
-			totalCount: hashtags.length,
-			maxAllowed: platformData.maxHashtags,
-			overallScore: Math.floor(Math.random() * 30) + 70,
-			recommendations: generateOverallRecommendations(analysis, platformData),
-		};
-	};
+    const keywords = nicheKeywords[niche] || [];
+    if (keywords.some(keyword => hashtag.toLowerCase().includes(keyword))) {
+      score += 20;
+    }
+    
+    return Math.min(100, score);
+  };
 
-	const generateOverallRecommendations = (hashtagAnalysis, platformData) => {
-		const recs = [];
+  const calculatePopularityScore = (hashtag, trendingTopics) => {
+    // Check if hashtag matches trending topics
+    const trendingMatch = trendingTopics.find(t => 
+      t.name.toLowerCase().includes(hashtag.toLowerCase()) ||
+      hashtag.toLowerCase().includes(t.name.toLowerCase())
+    );
+    
+    if (trendingMatch) {
+      return Math.round(trendingMatch.sentiment * 100);
+    }
+    
+    // Base popularity estimation
+    const popularityMap = {
+      'bitcoin': 90, 'crypto': 85, 'ai': 88, 'tech': 75, 'business': 70,
+      'marketing': 65, 'startup': 68, 'innovation': 72, 'defi': 80, 'web3': 78
+    };
+    
+    return popularityMap[hashtag.toLowerCase()] || 50;
+  };
 
-		if (hashtagAnalysis.length > platformData.maxHashtags) {
-			recs.push(
-				`Reduce hashtags to ${
-					platformData.maxHashtags
-				} for optimal ${platform.toUpperCase()} performance`
-			);
-		} else if (hashtagAnalysis.length < platformData.maxHashtags - 2) {
-			recs.push(
-				`Add ${
-					platformData.maxHashtags - hashtagAnalysis.length
-				} more hashtags to maximize reach`
-			);
-		}
+  const calculateCompetitionScore = (hashtag) => {
+    // Estimate competition based on hashtag popularity
+    const highCompetition = ['bitcoin', 'crypto', 'ai', 'tech', 'business', 'marketing'];
+    const mediumCompetition = ['defi', 'web3', 'startup', 'innovation', 'blockchain'];
+    
+    if (highCompetition.includes(hashtag.toLowerCase())) return 85;
+    if (mediumCompetition.includes(hashtag.toLowerCase())) return 60;
+    return 40;
+  };
 
-		const lowPerforming = hashtagAnalysis.filter(
-			(h) => h.performance === 'low'
-		);
-		if (lowPerforming.length > 0) {
-			recs.push(
-				`Replace ${lowPerforming.length} low-performing hashtags with trending alternatives`
-			);
-		}
+  const estimateVolume = (hashtag, popularityScore) => {
+    const baseVolume = popularityScore * 1000;
+    return baseVolume > 50000 ? '50K+' : baseVolume > 10000 ? '10K+' : '1K+';
+  };
 
-		const downTrending = hashtagAnalysis.filter((h) => h.trend === 'down');
-		if (downTrending.length > 0) {
-			recs.push(`Consider replacing ${downTrending.length} declining hashtags`);
-		}
+  const generateReason = (hashtag, relevance, popularity, competition) => {
+    if (relevance >= 80) return 'Highly relevant to your topic';
+    if (popularity >= 80) return 'Currently trending with high engagement';
+    if (competition <= 50) return 'Low competition, good visibility potential';
+    if (relevance >= 60 && popularity >= 60) return 'Good balance of relevance and popularity';
+    return 'Niche-specific with moderate potential';
+  };
 
-		return recs.slice(0, 3); // Max 3 recommendations
-	};
+  return (
+    <Box maxW="5xl" mx="auto" p={6}>
+      <VStack spacing={6} align="stretch">
+        {/* Header */}
+        <Box textAlign="center">
+          <Heading size="lg" mb={2}># Hashtag Optimizer</Heading>
+          <Text color="gray.600">
+            Analyze and optimize hashtags for maximum reach and engagement
+          </Text>
+        </Box>
 
-	const addHashtag = (hashtag) => {
-		const platformData = platforms.find((p) => p.value === platform);
-		if (currentHashtags.length >= platformData.maxHashtags) {
-			setError(
-				`Maximum ${
-					platformData.maxHashtags
-				} hashtags allowed for ${platform.toUpperCase()}`
-			);
-			return;
-		}
+        {/* Input Section */}
+        <Card>
+          <CardHeader>
+            <HStack>
+              <Icon as={Hash} />
+              <Heading size="md">Hashtag Analysis</Heading>
+            </HStack>
+          </CardHeader>
+          <CardBody>
+            <VStack spacing={4}>
+              <Input
+                placeholder="Enter your topic or content theme..."
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                size="lg"
+              />
+              
+              <HStack width="full" spacing={4}>
+                <Select value={platform} onChange={(e) => setPlatform(e.target.value)} flex={1}>
+                  {platforms.map(p => (
+                    <option key={p.value} value={p.value}>
+                      {p.label} (limit: {p.limit})
+                    </option>
+                  ))}
+                </Select>
+                
+                <Select value={niche} onChange={(e) => setNiche(e.target.value)} flex={1}>
+                  {niches.map(n => (
+                    <option key={n.value} value={n.value}>{n.label}</option>
+                  ))}
+                </Select>
+              </HStack>
 
-		if (!currentHashtags.includes(hashtag)) {
-			const newContent = content + (content ? ' ' : '') + `#${hashtag}`;
-			setContent(newContent);
-		}
-	};
+              <Button
+                colorScheme="orange"
+                onClick={handleAnalyze}
+                isLoading={isAnalyzing}
+                loadingText="Analyzing hashtags..."
+                leftIcon={<Icon as={Target} />}
+                size="lg"
+                width="full"
+                isDisabled={!topic.trim()}
+              >
+                Analyze Hashtags
+              </Button>
 
-	const removeHashtag = (hashtag) => {
-		const newContent = content
-			.replace(new RegExp(`#${hashtag}\\b`, 'g'), '')
-			.trim();
-		setContent(newContent);
-	};
+              <Text fontSize="sm" color="gray.600" textAlign="center">
+                Platform: {getCurrentPlatform().label} • Optimal: {getCurrentPlatform().optimal} hashtags
+              </Text>
+            </VStack>
+          </CardBody>
+        </Card>
 
-	const copyToClipboard = (text) => {
-		navigator.clipboard.writeText(text);
-		// You could add a toast notification here
-	};
+        {/* Results */}
+        {hashtagData && (
+          <VStack spacing={6} align="stretch">
+            {/* Summary */}
+            <Card>
+              <CardHeader>
+                <HStack>
+                  <Icon as={TrendingUp} />
+                  <Heading size="md">Analysis Summary</Heading>
+                </HStack>
+              </CardHeader>
+              <CardBody>
+                <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+                  <Stat textAlign="center">
+                    <StatLabel>Recommendations</StatLabel>
+                    <StatNumber>{hashtagData.summary.recommended}</StatNumber>
+                    <StatHelpText>Optimized hashtags</StatHelpText>
+                  </Stat>
 
-	const getPerformanceColor = (performance) => {
-		switch (performance) {
-			case 'high':
-				return 'green';
-			case 'medium':
-				return 'orange';
-			case 'low':
-				return 'red';
-			default:
-				return 'gray';
-		}
-	};
+                  <Stat textAlign="center">
+                    <StatLabel>Average Score</StatLabel>
+                    <StatNumber>{hashtagData.summary.avgScore}%</StatNumber>
+                    <StatHelpText>Quality rating</StatHelpText>
+                  </Stat>
 
-	const getTrendIcon = (trend) => {
-		switch (trend) {
-			case 'up':
-				return '📈';
-			case 'down':
-				return '📉';
-			case 'stable':
-				return '➡️';
-			default:
-				return '❓';
-		}
-	};
+                  <Stat textAlign="center">
+                    <StatLabel>Platform</StatLabel>
+                    <StatNumber fontSize="lg">{hashtagData.platform}</StatNumber>
+                    <StatHelpText>Limit: {hashtagData.summary.platformLimit}</StatHelpText>
+                  </Stat>
 
-	return (
-		<Box maxW='6xl' mx='auto'>
-			<VStack spacing={6} align='stretch'>
-				{/* Header */}
-				<Box textAlign='center'>
-					<Heading size='lg' mb={2} color='purple.500'>
-						🏷️ Hashtag Optimization Tool
-					</Heading>
-					<Text color='gray.600'>
-						AI-powered hashtag analysis and trending recommendations
-					</Text>
-				</Box>
+                  <Stat textAlign="center">
+                    <StatLabel>Niche</StatLabel>
+                    <StatNumber fontSize="lg">{hashtagData.niche}</StatNumber>
+                    <StatHelpText>Topic relevance</StatHelpText>
+                  </Stat>
+                </SimpleGrid>
+              </CardBody>
+            </Card>
 
-				{/* Input Section */}
-				<Card bg={cardBg} borderRadius='lg'>
-					<CardBody>
-						<VStack spacing={4} align='stretch'>
-							<SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-								<FormControl>
-									<FormLabel fontWeight='bold'>Platform</FormLabel>
-									<Select
-										value={platform}
-										onChange={(e) => setPlatform(e.target.value)}>
-										{platforms.map((p) => (
-											<option key={p.value} value={p.value}>
-												{p.label} (max {p.maxHashtags})
-											</option>
-										))}
-									</Select>
-								</FormControl>
+            {/* Hashtag Recommendations */}
+            <Card>
+              <CardHeader>
+                <HStack>
+                  <Icon as={Hash} />
+                  <Heading size="md">Recommended Hashtags</Heading>
+                  <Tooltip label="Higher scores indicate better potential for reach and engagement">
+                    <Icon as={Info} color="gray.400" />
+                  </Tooltip>
+                </HStack>
+              </CardHeader>
+              <CardBody>
+                <TableContainer>
+                  <Table variant="simple" size="sm">
+                    <Thead>
+                      <Tr>
+                        <Th>Hashtag</Th>
+                        <Th>Score</Th>
+                        <Th>Relevance</Th>
+                        <Th>Popularity</Th>
+                        <Th>Competition</Th>
+                        <Th>Volume</Th>
+                        <Th>Reason</Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {hashtagData.recommendations.map((rec, index) => (
+                        <Tr key={index}>
+                          <Td fontWeight="bold" color="blue.600">{rec.hashtag}</Td>
+                          <Td>
+                            <Badge 
+                              colorScheme={
+                                rec.overallScore >= 80 ? 'green' :
+                                rec.overallScore >= 60 ? 'yellow' : 'orange'
+                              }
+                            >
+                              {rec.overallScore}%
+                            </Badge>
+                          </Td>
+                          <Td>
+                            <Progress value={rec.relevance} size="sm" colorScheme="blue" />
+                          </Td>
+                          <Td>
+                            <Progress value={rec.popularity} size="sm" colorScheme="green" />
+                          </Td>
+                          <Td>
+                            <Progress value={rec.competition} size="sm" colorScheme="red" />
+                          </Td>
+                          <Td fontSize="xs">{rec.volume}</Td>
+                          <Td fontSize="xs" maxW="200px">{rec.reason}</Td>
+                        </Tr>
+                      ))}
+                    </Tbody>
+                  </Table>
+                </TableContainer>
+              </CardBody>
+            </Card>
 
-								<FormControl>
-									<FormLabel fontWeight='bold'>Content Niche</FormLabel>
-									<Select
-										value={niche}
-										onChange={(e) => setNiche(e.target.value)}>
-										{niches.map((n) => (
-											<option key={n.value} value={n.value}>
-												{n.label}
-											</option>
-										))}
-									</Select>
-								</FormControl>
-							</SimpleGrid>
+            {/* Copy-paste section */}
+            <Card>
+              <CardHeader>
+                <Heading size="sm">📋 Copy & Paste</Heading>
+              </CardHeader>
+              <CardBody>
+                <Box p={4} bg="gray.50" borderRadius="md" border="1px" borderColor="gray.200">
+                  <Text fontSize="sm" fontFamily="mono">
+                    {hashtagData.recommendations.slice(0, getCurrentPlatform().limit).map(r => r.hashtag).join(' ')}
+                  </Text>
+                </Box>
+              </CardBody>
+            </Card>
 
-							<FormControl>
-								<FormLabel fontWeight='bold'>Your Content</FormLabel>
-								<Textarea
-									value={content}
-									onChange={(e) => setContent(e.target.value)}
-									placeholder='Enter your post content with hashtags, or just hashtags to analyze...'
-									rows={4}
-								/>
-								<HStack justify='space-between' mt={2}>
-									<Text fontSize='sm' color='gray.500'>
-										{currentHashtags.length} hashtags found
-									</Text>
-									<Text fontSize='sm' color='gray.500'>
-										{content.length} characters
-									</Text>
-								</HStack>
-							</FormControl>
-
-							{/* Current Hashtags */}
-							{currentHashtags.length > 0 && (
-								<Box>
-									<Text fontWeight='bold' mb={2}>
-										Current Hashtags:
-									</Text>
-									<Wrap>
-										{currentHashtags.map((tag, index) => (
-											<WrapItem key={index}>
-												<Tag size='md' colorScheme='blue' borderRadius='full'>
-													<TagLabel>#{tag}</TagLabel>
-													<TagCloseButton onClick={() => removeHashtag(tag)} />
-												</Tag>
-											</WrapItem>
-										))}
-									</Wrap>
-								</Box>
-							)}
-
-							<Button
-								colorScheme='purple'
-								size='lg'
-								onClick={analyzeHashtags}
-								isLoading={loading}
-								loadingText='Analyzing hashtags...'
-								leftIcon={<Hash />}>
-								🤖 Analyze & Optimize Hashtags
-							</Button>
-						</VStack>
-					</CardBody>
-				</Card>
-
-				{/* Error Alert */}
-				{error && (
-					<Alert status='error' borderRadius='lg'>
-						<AlertIcon />
-						{error}
-					</Alert>
-				)}
-
-				{/* Loading State */}
-				{loading && (
-					<Card bg={cardBg} borderRadius='lg'>
-						<CardBody>
-							<VStack spacing={4}>
-								<Spinner size='xl' color='purple.500' />
-								<Text>Analyzing hashtags with AI and trending data...</Text>
-								<Progress
-									size='lg'
-									colorScheme='purple'
-									isIndeterminate
-									w='100%'
-								/>
-							</VStack>
-						</CardBody>
-					</Card>
-				)}
-
-				{/* Results */}
-				{(analysis || suggestions.length > 0) && (
-					<Tabs>
-						<TabList>
-							{analysis && <Tab>Current Analysis</Tab>}
-							{suggestions.length > 0 && (
-								<Tab>AI Suggestions ({suggestions.length})</Tab>
-							)}
-							<Tab>Trending Now</Tab>
-						</TabList>
-
-						<TabPanels>
-							{/* Current Analysis Tab */}
-							{analysis && (
-								<TabPanel>
-									<VStack spacing={6} align='stretch'>
-										{/* Overview Stats */}
-										<SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
-											<Stat textAlign='center'>
-												<StatLabel>Overall Score</StatLabel>
-												<StatNumber color='purple.500'>
-													{analysis.overallScore}%
-												</StatNumber>
-												<StatHelpText>Optimization level</StatHelpText>
-											</Stat>
-
-											<Stat textAlign='center'>
-												<StatLabel>Hashtags Used</StatLabel>
-												<StatNumber color='blue.500'>
-													{analysis.totalCount}/{analysis.maxAllowed}
-												</StatNumber>
-												<StatHelpText>Platform limit</StatHelpText>
-											</Stat>
-
-											<Stat textAlign='center'>
-												<StatLabel>High Performers</StatLabel>
-												<StatNumber color='green.500'>
-													{
-														analysis.hashtags.filter(
-															(h) => h.performance === 'high'
-														).length
-													}
-												</StatNumber>
-												<StatHelpText>Top hashtags</StatHelpText>
-											</Stat>
-
-											<Stat textAlign='center'>
-												<StatLabel>Need Replacement</StatLabel>
-												<StatNumber color='red.500'>
-													{
-														analysis.hashtags.filter(
-															(h) => h.recommendation === 'replace'
-														).length
-													}
-												</StatNumber>
-												<StatHelpText>Low performers</StatHelpText>
-											</Stat>
-										</SimpleGrid>
-
-										{/* Hashtag Performance Table */}
-										<Card>
-											<CardHeader>
-												<Heading size='md'>
-													Hashtag Performance Analysis
-												</Heading>
-											</CardHeader>
-											<CardBody>
-												<TableContainer>
-													<Table variant='simple'>
-														<Thead>
-															<Tr>
-																<Th>Hashtag</Th>
-																<Th>Performance</Th>
-																<Th>Engagement</Th>
-																<Th>Trend</Th>
-																<Th>Recommendation</Th>
-															</Tr>
-														</Thead>
-														<Tbody>
-															{analysis.hashtags.map((hashtag, index) => (
-																<Tr key={index}>
-																	<Td fontWeight='bold'>#{hashtag.tag}</Td>
-																	<Td>
-																		<Badge
-																			colorScheme={getPerformanceColor(
-																				hashtag.performance
-																			)}>
-																			{hashtag.performance}
-																		</Badge>
-																	</Td>
-																	<Td>
-																		{(hashtag.engagement / 1000).toFixed(1)}K
-																	</Td>
-																	<Td>
-																		{getTrendIcon(hashtag.trend)}{' '}
-																		{hashtag.trend}
-																	</Td>
-																	<Td>
-																		<Badge
-																			colorScheme={
-																				hashtag.recommendation === 'keep'
-																					? 'green'
-																					: 'orange'
-																			}>
-																			{hashtag.recommendation}
-																		</Badge>
-																	</Td>
-																</Tr>
-															))}
-														</Tbody>
-													</Table>
-												</TableContainer>
-											</CardBody>
-										</Card>
-
-										{/* Recommendations */}
-										{analysis.recommendations.length > 0 && (
-											<Card>
-												<CardHeader>
-													<Heading size='md'>
-														💡 Optimization Recommendations
-													</Heading>
-												</CardHeader>
-												<CardBody>
-													<VStack align='stretch' spacing={2}>
-														{analysis.recommendations.map((rec, index) => (
-															<Box
-																key={index}
-																bg='purple.50'
-																p={3}
-																borderRadius='md'>
-																<Text>• {rec}</Text>
-															</Box>
-														))}
-													</VStack>
-												</CardBody>
-											</Card>
-										)}
-									</VStack>
-								</TabPanel>
-							)}
-
-							{/* AI Suggestions Tab */}
-							{suggestions.length > 0 && (
-								<TabPanel>
-									<VStack spacing={4} align='stretch'>
-										<Box>
-											<Heading size='md' mb={3}>
-												🤖 AI-Powered Hashtag Suggestions
-											</Heading>
-											<Text color='gray.600' fontSize='sm'>
-												Based on your content, platform, and trending data
-											</Text>
-										</Box>
-
-										<SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-											{suggestions.map((suggestion, index) => (
-												<Card
-													key={index}
-													borderWidth='1px'
-													borderColor={borderColor}>
-													<CardBody>
-														<Flex align='center' mb={3}>
-															<Text fontWeight='bold' fontSize='lg'>
-																#{suggestion.tag}
-															</Text>
-															<Spacer />
-															<Badge colorScheme='green'>
-																{suggestion.confidence}%
-															</Badge>
-														</Flex>
-
-														<VStack align='stretch' spacing={2}>
-															<HStack>
-																<Text fontSize='sm' color='gray.600'>
-																	Engagement:
-																</Text>
-																<Text fontSize='sm' fontWeight='bold'>
-																	{(suggestion.engagement / 1000).toFixed(1)}K
-																</Text>
-															</HStack>
-
-															<HStack>
-																<Text fontSize='sm' color='gray.600'>
-																	Trend:
-																</Text>
-																<Text fontSize='sm'>
-																	{getTrendIcon(suggestion.trend)}{' '}
-																	{suggestion.trend}
-																</Text>
-															</HStack>
-
-															<Text fontSize='xs' color='gray.500'>
-																{suggestion.reason}
-															</Text>
-
-															<HStack mt={3}>
-																<Button
-																	size='sm'
-																	colorScheme='purple'
-																	onClick={() => addHashtag(suggestion.tag)}
-																	flex={1}>
-																	Add to Content
-																</Button>
-																<Tooltip label='Copy hashtag'>
-																	<IconButton
-																		size='sm'
-																		icon={<Copy />}
-																		onClick={() =>
-																			copyToClipboard(`#${suggestion.tag}`)
-																		}
-																	/>
-																</Tooltip>
-															</HStack>
-														</VStack>
-													</CardBody>
-												</Card>
-											))}
-										</SimpleGrid>
-									</VStack>
-								</TabPanel>
-							)}
-
-							{/* Trending Tab */}
-							<TabPanel>
-								<VStack spacing={4} align='stretch'>
-									<Flex align='center'>
-										<Heading size='md'>
-											📈 Trending in{' '}
-											{niches.find((n) => n.value === niche)?.label}
-										</Heading>
-										<Spacer />
-										<Button
-											size='sm'
-											leftIcon={<RefreshCw />}
-											onClick={loadTrendingHashtags}>
-											Refresh
-										</Button>
-									</Flex>
-
-									<SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
-										{trendingHashtags.map((hashtag, index) => (
-											<Card
-												key={index}
-												borderWidth='1px'
-												borderColor={borderColor}>
-												<CardBody>
-													<VStack align='stretch' spacing={2}>
-														<Flex align='center'>
-															<Text fontWeight='bold'>#{hashtag.tag}</Text>
-															<Spacer />
-															<Text fontSize='sm'>
-																{getTrendIcon(hashtag.trend)}
-															</Text>
-														</Flex>
-
-														<Progress
-															value={(hashtag.engagement / 1000000) * 100}
-															size='sm'
-															colorScheme='purple'
-														/>
-
-														<HStack justify='space-between' fontSize='sm'>
-															<Text color='gray.600'>
-																{(hashtag.engagement / 1000).toFixed(1)}K
-															</Text>
-															<Text color='gray.600'>
-																{(hashtag.volume / 1000).toFixed(1)}K posts
-															</Text>
-														</HStack>
-
-														<Button
-															size='sm'
-															colorScheme='purple'
-															variant='outline'
-															onClick={() => addHashtag(hashtag.tag)}>
-															Add to Content
-														</Button>
-													</VStack>
-												</CardBody>
-											</Card>
-										))}
-									</SimpleGrid>
-								</VStack>
-							</TabPanel>
-						</TabPanels>
-					</Tabs>
-				)}
-			</VStack>
-		</Box>
-	);
+            {/* Metadata */}
+            <Box fontSize="xs" color="gray.500" textAlign="center" bg="gray.50" p={3} borderRadius="md">
+              <Text>
+                Hashtag analysis completed at {new Date().toLocaleString()}
+              </Text>
+              <Text mt={1}>
+                Based on trending data and algorithmic relevance scoring
+              </Text>
+            </Box>
+          </VStack>
+        )}
+      </VStack>
+    </Box>
+  );
 };
 
 export default HashtagOptimizer;

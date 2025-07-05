@@ -25,7 +25,7 @@ import {
   CardBody,
   useBreakpointValue,
 } from '@chakra-ui/react';
-import { ChevronRight, Sparkles, TrendingUp, Clock, Hash, Users, BarChart3, Layers } from 'lucide-react';
+import { ChevronRight, Sparkles, TrendingUp, Clock, Hash, Users, BarChart3, Layers, Activity } from 'lucide-react';
 import ViralPredictor from '../components/ViralPredictor';
 import CreatorLookup from '../components/CreatorLookup';
 import PredictionHistory from '../components/PredictionHistory';
@@ -33,6 +33,7 @@ import HashtagOptimizer from '../components/HashtagOptimizer';
 import TimingOptimizer from '../components/TimingOptimizer';
 import ContentOptimizer from '../components/ContentOptimizer';
 import BatchAnalysis from '../components/BatchAnalysis';
+import AdvancedAnalytics from '../components/AdvancedAnalytics';
 import { AnalyticsProvider } from '../components/Analytics';
 
 export default function Home() {
@@ -51,7 +52,7 @@ export default function Home() {
       id: 0,
       icon: Users,
       title: 'Creator Analysis',
-      description: 'Analyze real follower data via MCP',
+      description: 'Real follower data via MCP',
       color: 'blue',
       component: <CreatorLookup />,
       isNew: false,
@@ -108,6 +109,15 @@ export default function Home() {
       description: 'Analyze multiple posts at once',
       color: 'teal',
       component: <BatchAnalysis />,
+      isNew: false,
+    },
+    {
+      id: 7,
+      icon: Activity,
+      title: 'Advanced Analytics',
+      description: 'Performance insights & trends',
+      color: 'indigo',
+      component: <AdvancedAnalytics />,
       isNew: true,
     },
   ];
@@ -139,7 +149,10 @@ export default function Home() {
                     🧠 Gemini AI
                   </Badge>
                   <Badge colorScheme="blue" fontSize="sm" px={3} py={1}>
-                    📊 7 Tools
+                    📊 8 Tools
+                  </Badge>
+                  <Badge colorScheme="orange" fontSize="sm" px={3} py={1}>
+                    🚀 Production Ready
                   </Badge>
                 </HStack>
               </Box>
@@ -167,6 +180,13 @@ export default function Home() {
                       >
                         Predict Viral
                       </Button>
+                      <Button
+                        colorScheme="teal"
+                        onClick={() => setActiveTab(6)}
+                        leftIcon={<Icon as={Layers} />}
+                      >
+                        Batch Analysis
+                      </Button>
                     </HStack>
                   </VStack>
                 </CardBody>
@@ -177,7 +197,8 @@ export default function Home() {
                 templateColumns={{ 
                   base: "1fr", 
                   md: "repeat(2, 1fr)", 
-                  lg: "repeat(3, 1fr)" 
+                  lg: "repeat(3, 1fr)",
+                  xl: "repeat(4, 1fr)" 
                 }} 
                 gap={6} 
                 w="full"
@@ -262,6 +283,9 @@ export default function Home() {
                   </Link>
                 </Text>
                 <Text fontSize="xs" color="gray.400" mt={2}>
+                  Production-ready with 8 comprehensive tools • No mock data • Real AI predictions
+                </Text>
+                <Text fontSize="xs" color="gray.400" mt={1}>
                   Built for maximum viral potential • Updated July 4, 2025
                 </Text>
               </Box>

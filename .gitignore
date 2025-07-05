@@ -23,3 +23,5 @@ Thumbs.db
 
 
 .next
+.cleanup-backup
+backups

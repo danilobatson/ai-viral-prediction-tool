@@ -1,7 +1,7 @@
 {
   "name": "ai-viral-prediction-tool",
-  "version": "1.0.0",
-  "description": "AI tool that predicts viral crypto posts with high accuracy",
+  "version": "2.0.0",
+  "description": "AI tool that predicts viral crypto posts with high accuracy - Production Ready",
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
@@ -11,7 +11,11 @@
     "test": "node scripts/test-all.js",
     "test:quick": "node scripts/testing/verify-functionality.js",
     "test:api": "node scripts/testing/test-apis.js",
-    "test:manual": "echo 'See scripts/testing/manual-tests.md for manual testing checklist'"
+    "test:edge": "node scripts/testing/edge-cases/comprehensive-edge-tests.js",
+    "test:env": "node scripts/check-environment.js",
+    "test:all": "npm run test:env && npm run test:quick && npm run test:edge",
+    "clean": "rm -rf .next && rm -rf node_modules/.cache",
+    "deploy": "npm run test:all && npm run build && npx vercel --prod"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.2.4",
@@ -45,8 +49,16 @@
     "prediction",
     "social-media",
     "next.js",
-    "api"
+    "api",
+    "production-ready",
+    "gemini-ai",
+    "lunarcrush",
+    "mcp"
   ],
   "author": "Danilo Batson",
-  "license": "MIT"
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
 }
