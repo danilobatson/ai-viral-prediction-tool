@@ -26,6 +26,7 @@ import {
   Divider,
 } from '@chakra-ui/react';
 import { Edit3, Zap, TrendingUp, CheckCircle } from 'lucide-react';
+import { niches } from './enhanced-options';
 
 const ContentOptimizer = () => {
   const [originalContent, setOriginalContent] = useState('');
@@ -40,14 +41,7 @@ const ContentOptimizer = () => {
 
   ];
 
-  const niches = [
-    { value: 'crypto', label: 'Cryptocurrency & DeFi' },
-    { value: 'ai', label: 'AI & Machine Learning' },
-    { value: 'tech', label: 'Technology' },
-    { value: 'business', label: 'Business & Finance' },
-    { value: 'marketing', label: 'Marketing & Growth' },
-    { value: 'startup', label: 'Startups & Innovation' },
-  ];
+  `cat temp_content_niches.txt`
 
   const getCurrentPlatform = () => platforms.find(p => p.value === platform);
 

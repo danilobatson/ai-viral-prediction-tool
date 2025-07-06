@@ -30,6 +30,7 @@ import {
   Tooltip,
 } from '@chakra-ui/react';
 import { Hash, TrendingUp, Target, Info } from 'lucide-react';
+import { niches } from './enhanced-options';
 
 const HashtagOptimizer = () => {
   const [topic, setTopic] = useState('');
@@ -44,14 +45,7 @@ const HashtagOptimizer = () => {
     
   ];
 
-  const niches = [
-    { value: 'crypto', label: 'Cryptocurrency & DeFi' },
-    { value: 'ai', label: 'AI & Machine Learning' },
-    { value: 'tech', label: 'Technology' },
-    { value: 'business', label: 'Business & Finance' },
-    { value: 'marketing', label: 'Marketing & Growth' },
-    { value: 'startup', label: 'Startups & Innovation' },
-  ];
+  `cat temp_hashtag_niches.txt`
 
   const getCurrentPlatform = () => platforms.find(p => p.value === platform);
 

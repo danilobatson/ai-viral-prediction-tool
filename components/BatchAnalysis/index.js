@@ -53,6 +53,7 @@ import {
 	Settings,
 	Info,
 } from 'lucide-react';
+import { niches, contentTypes } from './enhanced-options';
 
 const BatchAnalysis = () => {
 	const [posts, setPosts] = useState('');
@@ -67,28 +68,6 @@ const BatchAnalysis = () => {
 	const [rateLimitDelay, setRateLimitDelay] = useState('1000');
 	const toast = useToast();
 
-	const niches = [
-		{ value: 'crypto', label: '₿ Cryptocurrency & DeFi' },
-		{ value: 'bitcoin', label: '🟠 Bitcoin' },
-		{ value: 'ethereum', label: '⟠ Ethereum' },
-		{ value: 'altcoins', label: '🪙 Altcoins' },
-		{ value: 'nft', label: '🖼️ NFTs & Digital Art' },
-		{ value: 'trading', label: '📈 Trading & Investing' },
-		{ value: 'ai', label: '🤖 AI & Machine Learning' },
-		{ value: 'tech', label: '💻 Technology' },
-		{ value: 'business', label: '💼 Business' },
-		{ value: 'startup', label: '🚀 Startups' },
-	];
-
-	const contentTypes = [
-		{ value: 'text', label: '📄 Text Tweet' },
-		{ value: 'image', label: '📸 Image Tweet' },
-		{ value: 'video', label: '🎥 Video Tweet' },
-		{ value: 'thread', label: '🧵 Twitter Thread' },
-		{ value: 'poll', label: '📊 Twitter Poll' },
-		{ value: 'quote', label: '💬 Quote Tweet' },
-		{ value: 'reply', label: '↩️ Reply Tweet' },
-	];
 
 	const startBatchAnalysis = async () => {
 		if (!posts.trim()) {

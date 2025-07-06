@@ -28,6 +28,7 @@ import {
   Switch,
 } from '@chakra-ui/react';
 import { Clock, Calendar } from 'lucide-react';
+import { contentTypes } from './enhanced-options';
 
 const TimingOptimizer = () => {
   const [platform, setPlatform] = useState('x');
@@ -43,12 +44,7 @@ const TimingOptimizer = () => {
    
   ];
 
-  const contentTypes = [
-    { value: 'general', label: 'General Content' },
-    { value: 'crypto', label: 'Cryptocurrency' },
-    { value: 'tech', label: 'Technology/AI' },
-    { value: 'business', label: 'Business/Finance' },
-  ];
+  `cat temp_timing_content_types.txt`
 
   const analyzeOptimalTiming = async () => {
     setLoading(true);
