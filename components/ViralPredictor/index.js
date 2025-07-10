@@ -65,7 +65,7 @@ export default function ViralPredictor() {
 	const toast = useToast();
 
 	const scrollToPredictor = () => {
-		predictorRef.current?.scrollIntoView({ 
+		predictorRef.current?.scrollIntoView({
 			behavior: 'smooth',
 			block: 'start'
 		});
@@ -97,15 +97,15 @@ export default function ViralPredictor() {
 
 		try {
 			updateProgress('connecting', 'Reading your original tweet content...');
-			
+
 			if (creator.trim()) {
 				updateProgress('fetching', 'Looking up your 𝕏 profile...');
-				
+
 				const cleanCreator = creator.trim().replace(/^@+/, '');
-				
+
 				try {
 					updateProgress('fetching', 'Fetching your follower count and engagement history...');
-					
+
 					const creatorResponse = await fetch('/api/lookup-creator', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
@@ -113,7 +113,7 @@ export default function ViralPredictor() {
 					});
 
 					const creatorResult = await creatorResponse.json();
-					
+
 					if (!creatorResult.success) {
 						setCreatorError(creatorResult.error);
 						updateProgress('fetching', 'Creator lookup failed, using general analysis...');
@@ -125,7 +125,7 @@ export default function ViralPredictor() {
 					updateProgress('fetching', 'Account lookup failed, continuing with general analysis...');
 				}
 			}
-			
+
 			updateProgress('analyzing', 'Processing your original tweet with AI...');
 
 			const predictionResponse = await fetch('/api/predict-viral-ai', {
@@ -154,9 +154,9 @@ export default function ViralPredictor() {
 
 			toast({
 				title: `${predictionResult.viralProbability}% Viral Potential!`,
-				description: predictionResult.hasCreatorData 
-					? '𝕏 Enhanced with your account analytics' 
-					: creatorError 
+				description: predictionResult.hasCreatorData
+					? '𝕏 Enhanced with your account analytics'
+					: creatorError
 						? '📊 General analysis (𝕏 lookup failed)'
 						: '📊 General original tweet analysis',
 				status: predictionResult.viralProbability >= 70 ? 'success' : 'info',
@@ -204,7 +204,7 @@ export default function ViralPredictor() {
 	return (
 		<Box minH="100vh" bg="gray.50">
 			<ConfettiEffect trigger={showConfetti} viralProbability={results?.viralProbability} />
-			
+
 			{/* Modern Hero Section */}
 			<ModernHero onScrollToPredictor={scrollToPredictor} />
 
@@ -225,29 +225,9 @@ export default function ViralPredictor() {
 										𝕏 Analyze Your Original Tweet
 									</Heading>
 									<Text color="gray.600">
-										Paste your original tweet content and get instant viral predictions
+										Paste your original tweet content and get instant viral predictions. Retweets not supported.
 									</Text>
 								</VStack>
-
-								<Alert status="info" borderRadius="lg">
-									<AlertIcon />
-									<Box>
-										<Text fontWeight="bold">📝 Original Tweets Only</Text>
-										<Text fontSize="sm">
-											This tool analyzes your <strong>original tweet content</strong>. For retweets, we'd need to analyze both the original author and all retweeters - that's a different (more complex) analysis!
-										</Text>
-									</Box>
-								</Alert>
-
-								<Alert status="success" borderRadius="lg">
-									<AlertIcon />
-									<Box>
-										<Text fontWeight="bold">💡 Pro Tip for 𝕏 Users</Text>
-										<Text fontSize="sm">
-											Add your 𝕏 handle (like "elonmusk" or "VitalikButerin") to get predictions based on your actual follower count and engagement rates!
-										</Text>
-									</Box>
-								</Alert>
 
 								<Textarea
 									value={content}
@@ -273,12 +253,12 @@ This is just the beginning of the next bull run. 📈
 									}}
 									borderRadius="xl"
 								/>
-								
+
 								<HStack w="full" spacing={4}>
 									<Input
 										value={creator}
 										onChange={(e) => setCreator(e.target.value)}
-										placeholder="Your 𝕏 handle: elonmusk (no @ needed)"
+										placeholder="Your 𝕏 handle: username (no @ needed)"
 										size="lg"
 										flex={1}
 										bg="white"
@@ -329,7 +309,7 @@ This is just the beginning of the next bull run. 📈
 							animate={{ opacity: 1, scale: 1 }}
 							transition={{ duration: 0.3 }}
 						>
-							<TwitterProgress 
+							<TwitterProgress
 								currentStep={progressStep}
 								currentMessage={progressMessage}
 								error={error}
@@ -370,19 +350,19 @@ This is just the beginning of the next bull run. 📈
 								{/* Viral Probability Meter */}
 								<GlassCard p={8} textAlign="center">
 									<VStack spacing={6}>
-										<ViralMeter 
+										<ViralMeter
 											probability={results.viralProbability}
 											category={results.viralCategory}
 											isAnimating={true}
 										/>
-										
+
 										<VStack spacing={2}>
 											<HStack spacing={2}>
 												<Text fontSize="2xl">
 													{getTwitterEmoji(results.viralProbability)}
 												</Text>
-												<Badge 
-													colorScheme={getViralCategoryColor(results.viralCategory)} 
+												<Badge
+													colorScheme={getViralCategoryColor(results.viralCategory)}
 													fontSize="lg"
 													px={4}
 													py={2}
@@ -392,8 +372,8 @@ This is just the beginning of the next bull run. 📈
 												</Badge>
 											</HStack>
 											<Text color="gray.600">
-												{results.hasCreatorData 
-													? '✅ Personalized for your 𝕏 account' 
+												{results.hasCreatorData
+													? '✅ Personalized for your 𝕏 account'
 													: creatorError
 														? '📊 General analysis (couldn\'t get account data)'
 														: '📊 General original tweet analysis'
@@ -418,29 +398,29 @@ This is just the beginning of the next bull run. 📈
 										<CardBody>
 											<SimpleGrid columns={{ base: 2, md: 4 }} spacing={6}>
 												{[
-													{ 
-														label: '𝕏 Handle', 
-														value: `@${results.creatorData.handle}`, 
+													{
+														label: '𝕏 Handle',
+														value: `@${results.creatorData.handle}`,
 														icon: FaTwitter,
-														color: 'gray' 
+														color: 'gray'
 													},
-													{ 
-														label: 'Followers', 
-														value: formatNumber(results.creatorData.followers), 
+													{
+														label: 'Followers',
+														value: formatNumber(results.creatorData.followers),
 														icon: FaHeart,
-														color: 'red' 
+														color: 'red'
 													},
-													{ 
-														label: 'Avg Engagement', 
-														value: formatNumber(results.creatorData.engagements), 
+													{
+														label: 'Avg Engagement',
+														value: formatNumber(results.creatorData.engagements),
 														icon: FaReply,
-														color: 'green' 
+														color: 'green'
 													},
-													{ 
-														label: 'This Tweet', 
-														value: formatNumber(results.expectedEngagement), 
+													{
+														label: 'This Tweet',
+														value: formatNumber(results.expectedEngagement),
 														icon: FaShare,
-														color: 'purple' 
+														color: 'purple'
 													},
 												].map((stat, index) => (
 													<MotionBox
@@ -479,27 +459,27 @@ This is just the beginning of the next bull run. 📈
 										<CardBody>
 											<SimpleGrid columns={{ base: 2, md: 4 }} spacing={6}>
 												{[
-													{ 
-														key: 'emotional', 
-														label: 'Emotional Impact', 
+													{
+														key: 'emotional',
+														label: 'Emotional Impact',
 														desc: 'Makes people feel something',
 														emoji: '😍'
 													},
-													{ 
-														key: 'socialCurrency', 
-														label: 'Share Value', 
+													{
+														key: 'socialCurrency',
+														label: 'Share Value',
 														desc: 'Worth sharing to followers',
 														emoji: '🔄'
 													},
-													{ 
-														key: 'practicalValue', 
-														label: 'Useful Content', 
+													{
+														key: 'practicalValue',
+														label: 'Useful Content',
 														desc: 'Helpful or informative',
 														emoji: '💡'
 													},
-													{ 
-														key: 'story', 
-														label: 'Story Appeal', 
+													{
+														key: 'story',
+														label: 'Story Appeal',
 														desc: 'Has narrative hook',
 														emoji: '📖'
 													},
@@ -585,9 +565,9 @@ This is just the beginning of the next bull run. 📈
 																	transition={{ duration: 0.3, delay: index * 0.05 }}
 																	whileHover={{ scale: 1.05 }}
 																>
-																	<Badge 
-																		colorScheme="blue" 
-																		variant="outline" 
+																	<Badge
+																		colorScheme="blue"
+																		variant="outline"
 																		fontSize="sm"
 																		px={3}
 																		py={1}
