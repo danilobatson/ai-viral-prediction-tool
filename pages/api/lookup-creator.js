@@ -1,7 +1,7 @@
 import { createMcpClient, executeToolCall } from '../../lib/mcp-client.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export default async function handler(req, res) {
 	if (req.method !== 'POST') {
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
 			});
 		}
 
-		if (!process.env.GOOGLE_GEMINI_API_KEY) {
+		if (!process.env.GEMINI_API_KEY) {
 			return res.status(500).json({
 				success: false,
 				error: 'Google Gemini API key not configured',
@@ -225,8 +225,6 @@ Extract the HIGHEST/MOST REALISTIC numbers you find.`;
 		const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
 		const extractionResult = await model.generateContent(extractionPrompt);
 		const extractionText = extractionResult.response.text();
-
-		console.log(`🤖 LLM Extraction Result:`, extractionText);
 
 		// Parse LLM extraction
 		let extractedData;

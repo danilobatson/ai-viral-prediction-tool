@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 	}
 
 	try {
-		const geminiApiKey = process.env.GOOGLE_GEMINI_API_KEY;
+		const geminiApiKey = process.env.GEMINI_API_KEY;
 		const llmEnabled = process.env.LLM_ENABLED === 'true';
 
 		const llmStatus = {
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
 
 			// 🔍 CONFIGURATION GUIDE
 			configuration: {
-				howToEnable: 'Set LLM_ENABLED=true and GOOGLE_GEMINI_API_KEY in .env',
+				howToEnable: 'Set LLM_ENABLED=true and GEMINI_API_KEY in .env',
 				apiKeySource: 'https://makersuite.google.com/',
 				costInfo:
 					'Google Gemini 1.5 Flash is free up to 15 requests per minute',

@@ -4,7 +4,7 @@ import {
 	validateViralProbability,
 } from '../../lib/viral-categories.js';
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export default async function handler(req, res) {
 	if (req.method !== 'POST') {
@@ -34,8 +34,6 @@ export default async function handler(req, res) {
 		let creatorError = null;
 
 		if (creator && creator.trim()) {
-			console.log(`🔍 Fetching REAL creator data via MCP for: ${creator}`);
-
 			try {
 				const creatorResponse = await fetch(
 					`${req.headers.origin || 'http://localhost:3001'}/api/lookup-creator`,
@@ -146,8 +144,6 @@ CRITICAL RULES:
 - Base analysis on proven viral psychology principles
 - Provide actionable recommendations
 - Return only valid JSON, no explanations`;
-
-		console.log('🤖 Calling Gemini for viral analysis...');
 
 		const model = genAI.getGenerativeModel({
 			model: 'gemini-2.0-flash-lite',

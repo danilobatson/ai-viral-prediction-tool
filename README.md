@@ -162,7 +162,7 @@ cp .env.example .env.local
 # 4. Add your API keys to .env.local
 echo "LUNARCRUSH_API_KEY=your_lunarcrush_api_key_here" >> .env.local
 echo "GEMINI_API_KEY=your_gemini_api_key_here" >> .env.local
-echo "GOOGLE_GEMINI_API_KEY=your_gemini_api_key_here" >> .env.local
+echo "GEMINI_API_KEY=your_gemini_api_key_here" >> .env.local
 echo "LLM_ENABLED=true" >> .env.local
 echo "MCP_ENABLED=true" >> .env.local
 
@@ -315,7 +315,7 @@ npx vercel --prod
 # 3. Configure environment variables in Vercel dashboard:
 # - LUNARCRUSH_API_KEY
 # - GEMINI_API_KEY
-# - GOOGLE_GEMINI_API_KEY
+# - GEMINI_API_KEY
 # - LLM_ENABLED=true
 # - MCP_ENABLED=true
 ```
@@ -358,7 +358,7 @@ CMD ["npm", "start"]
 # Required API Keys
 LUNARCRUSH_API_KEY=your_lunarcrush_api_key_here
 GEMINI_API_KEY=your_gemini_api_key_here
-GOOGLE_GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
 
 # Feature Flags
 LLM_ENABLED=true

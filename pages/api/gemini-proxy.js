@@ -20,10 +20,10 @@ let genAI = null;
 let model = null;
 
 function initializeGemini() {
-	const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
+	const apiKey = process.env.GEMINI_API_KEY;
 
 	if (!apiKey) {
-		throw new Error('GOOGLE_GEMINI_API_KEY not configured');
+		throw new Error('GEMINI_API_KEY not configured');
 	}
 
 	if (!genAI) {
@@ -236,7 +236,7 @@ export default async function handler(req, res) {
 		if (error.message.includes('API key')) {
 			return res.status(401).json({
 				error: 'API key configuration issue',
-				message: 'Please check GOOGLE_GEMINI_API_KEY environment variable',
+				message: 'Please check GEMINI_API_KEY environment variable',
 				needsSetup: true,
 				timestamp: new Date().toISOString(),
 			});
