@@ -14,55 +14,49 @@ import {
 	Icon,
 	useToast,
 	Input,
-	Card,
 	CardBody,
 	CardHeader,
 	Heading,
 	Wrap,
 	WrapItem,
 	Container,
+	useColorModeValue,
 	Alert,
 	AlertIcon,
-	AlertDescription,
-	Link,
-	Divider,
 } from '@chakra-ui/react';
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
-	FaHeart,
-	FaReply,
-	FaShare,
+	FaBrain,
+	FaUser,
+	FaHashtag,
 	FaClock,
 	FaLightbulb,
-	FaHashtag,
-	FaTwitter,
-	FaBrain,
-	FaExternalLinkAlt,
-	FaDatabase,
+	FaSearch,
 } from 'react-icons/fa';
 import { formatNumber } from '../../lib/number-utils';
-import TwitterProgress from '../ui/SocialMediaProgress';
+import AnalysisProgress from '../ui/AnalysisProgress';
 import ViralMeter from '../ui/ViralMeter';
 import GlassCard from '../ui/GlassCard';
 import ConfettiEffect from '../ui/ConfettiEffect';
 import ModernHero from '../ui/ModernHero';
-import Footer from '../ui/Footer';
+import ThemeToggle from '../ui/ThemeToggle';
 
 const MotionBox = motion(Box);
 
-export default function ViralPredictor() {
+export default function ModernViralPredictor() {
 	const [content, setContent] = useState('');
 	const [creator, setCreator] = useState('');
 	const [loading, setLoading] = useState(false);
 	const [results, setResults] = useState(null);
 	const [error, setError] = useState('');
-	const [creatorError, setCreatorError] = useState('');
 	const [progressStep, setProgressStep] = useState('');
-	const [progressMessage, setProgressMessage] = useState('');
 	const [showConfetti, setShowConfetti] = useState(false);
 	const predictorRef = useRef(null);
 	const toast = useToast();
+
+	const bg = useColorModeValue('gray.50', 'gray.900');
+	const cardBg = useColorModeValue('white', 'gray.800');
 
 	const scrollToPredictor = () => {
 		predictorRef.current?.scrollIntoView({ 
@@ -71,17 +65,11 @@ export default function ViralPredictor() {
 		});
 	};
 
-	const updateProgress = (step, message = '') => {
-		console.log(`🔄 Progress: ${step} - ${message}`);
-		setProgressStep(step);
-		setProgressMessage(message);
-	};
-
 	const handlePredict = async () => {
 		if (!content.trim()) {
 			toast({
-				title: 'Tweet Required',
-				description: 'Please enter your original tweet content to analyze',
+				title: 'Content Required',
+				description: 'Please enter some content to analyze',
 				status: 'warning',
 				duration: 3000,
 				isClosable: true,
@@ -91,53 +79,31 @@ export default function ViralPredictor() {
 
 		setLoading(true);
 		setError('');
-		setCreatorError('');
 		setResults(null);
+		setProgressStep('connecting');
 		setShowConfetti(false);
 
 		try {
-			updateProgress('connecting', 'Reading your original tweet content...');
+			const updateProgress = (step) => {
+				setProgressStep(step);
+			};
+
+			updateProgress('connecting');
 			
 			if (creator.trim()) {
-				updateProgress('fetching', 'Looking up your 𝕏 profile...');
-				
-				const cleanCreator = creator.trim().replace(/^@+/, '');
-				
-				try {
-					updateProgress('fetching', 'Fetching your follower count and engagement history...');
-					
-					const creatorResponse = await fetch('/api/lookup-creator', {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ creator: cleanCreator }),
-					});
-
-					const creatorResult = await creatorResponse.json();
-					
-					if (!creatorResult.success) {
-						setCreatorError(creatorResult.error);
-						updateProgress('fetching', 'Creator lookup failed, using general analysis...');
-					} else {
-						updateProgress('fetching', 'Account data retrieved! Enhancing analysis...');
-					}
-				} catch (creatorErr) {
-					setCreatorError(`Failed to lookup 𝕏 account: ${creatorErr.message}`);
-					updateProgress('fetching', 'Account lookup failed, continuing with general analysis...');
-				}
+				updateProgress('fetching');
 			}
 			
-			updateProgress('analyzing', 'Processing your original tweet with AI...');
+			updateProgress('analyzing');
 
 			const predictionResponse = await fetch('/api/predict-viral-ai', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					content: content.trim(),
-					creator: creator.trim().replace(/^@+/, '') || undefined,
+					creator: creator.trim() || undefined,
 				}),
 			});
-
-			updateProgress('analyzing', 'Calculating viral probability for your original tweet...');
 
 			const predictionResult = await predictionResponse.json();
 
@@ -145,20 +111,19 @@ export default function ViralPredictor() {
 				throw new Error(predictionResult.error);
 			}
 
-			updateProgress('complete', 'Original tweet analysis complete!');
+			updateProgress('complete');
 			setResults(predictionResult);
 
+			// Trigger confetti for high viral scores
 			if (predictionResult.viralProbability >= 70) {
 				setTimeout(() => setShowConfetti(true), 500);
 			}
 
 			toast({
-				title: `${predictionResult.viralProbability}% Viral Potential!`,
+				title: `${predictionResult.viralProbability}% Viral Probability!`,
 				description: predictionResult.hasCreatorData 
-					? '𝕏 Enhanced with your account analytics' 
-					: creatorError 
-						? '📊 General analysis (𝕏 lookup failed)'
-						: '📊 General original tweet analysis',
+					? 'Enhanced with real creator metrics' 
+					: 'Content-only analysis',
 				status: predictionResult.viralProbability >= 70 ? 'success' : 'info',
 				duration: 5000,
 				isClosable: true,
@@ -166,7 +131,7 @@ export default function ViralPredictor() {
 
 		} catch (err) {
 			setError(err.message);
-			updateProgress('error', err.message);
+			setProgressStep('error');
 			toast({
 				title: 'Analysis Failed',
 				description: err.message,
@@ -189,20 +154,9 @@ export default function ViralPredictor() {
 		}
 	};
 
-	const getTwitterEmoji = (probability) => {
-		if (probability >= 80) return '🔥';
-		if (probability >= 70) return '🚀';
-		if (probability >= 60) return '💫';
-		if (probability >= 50) return '✨';
-		return '👍';
-	};
-
-	const cleanHandle = (handle) => {
-		return handle.trim().replace(/^@+/, '');
-	};
-
 	return (
-		<Box minH="100vh" bg="gray.50">
+		<Box minH="100vh" bg={bg}>
+			<ThemeToggle />
 			<ConfettiEffect trigger={showConfetti} viralProbability={results?.viralProbability} />
 			
 			{/* Modern Hero Section */}
@@ -221,30 +175,20 @@ export default function ViralPredictor() {
 						<GlassCard p={8}>
 							<VStack spacing={6}>
 								<VStack spacing={2} textAlign="center">
-									<Heading size="lg" bgGradient="linear(to-r, gray.700, black)" bgClip="text">
-										𝕏 Analyze Your Original Tweet
+									<Heading size="lg" bgGradient="linear(to-r, purple.400, pink.400)" bgClip="text">
+										✨ Analyze Your Content
 									</Heading>
 									<Text color="gray.600">
-										Paste your original tweet content and get instant viral predictions
+										Paste any content and add a creator handle for enhanced predictions
 									</Text>
 								</VStack>
 
 								<Alert status="info" borderRadius="lg">
 									<AlertIcon />
 									<Box>
-										<Text fontWeight="bold">📝 Original Tweets Only</Text>
+										<Text fontWeight="bold">Pro Tip</Text>
 										<Text fontSize="sm">
-											This tool analyzes your <strong>original tweet content</strong>. For retweets, we'd need to analyze both the original author and all retweeters - that's a different (more complex) analysis!
-										</Text>
-									</Box>
-								</Alert>
-
-								<Alert status="success" borderRadius="lg">
-									<AlertIcon />
-									<Box>
-										<Text fontWeight="bold">💡 Pro Tip for 𝕏 Users</Text>
-										<Text fontSize="sm">
-											Add your 𝕏 handle (like "elonmusk" or "VitalikButerin") to get predictions based on your actual follower count and engagement rates!
+											Add a creator handle (like "elonmusk") to get predictions enhanced with their real follower data and engagement patterns.
 										</Text>
 									</Box>
 								</Alert>
@@ -252,9 +196,7 @@ export default function ViralPredictor() {
 								<Textarea
 									value={content}
 									onChange={(e) => setContent(e.target.value)}
-									placeholder="Example original tweet:
-
-🚀 Bitcoin just broke through $100K resistance!
+									placeholder="🚀 Bitcoin just broke through $100K resistance!
 
 The institutional adoption we've been waiting for is finally here. MicroStrategy, Tesla, and now even pension funds are allocating to BTC.
 
@@ -264,12 +206,12 @@ This is just the beginning of the next bull run. 📈
 									size="lg"
 									minH="200px"
 									resize="vertical"
-									bg="white"
+									bg={cardBg}
 									border="2px solid"
 									borderColor="transparent"
 									_focus={{
-										borderColor: "gray.700",
-										boxShadow: "0 0 0 1px gray.700",
+										borderColor: "purple.400",
+										boxShadow: "0 0 0 1px purple.400",
 									}}
 									borderRadius="xl"
 								/>
@@ -278,30 +220,29 @@ This is just the beginning of the next bull run. 📈
 									<Input
 										value={creator}
 										onChange={(e) => setCreator(e.target.value)}
-										placeholder="Your 𝕏 handle: elonmusk (no @ needed)"
+										placeholder="Creator handle (optional): elonmusk"
 										size="lg"
 										flex={1}
-										bg="white"
+										bg={cardBg}
 										border="2px solid"
 										borderColor="transparent"
 										_focus={{
-											borderColor: "gray.700",
-											boxShadow: "0 0 0 1px gray.700",
+											borderColor: "purple.400",
+											boxShadow: "0 0 0 1px purple.400",
 										}}
 										borderRadius="xl"
 									/>
 									<Button
-										colorScheme="gray"
+										colorScheme="purple"
 										onClick={handlePredict}
 										isLoading={loading}
 										loadingText="Analyzing..."
 										size="lg"
 										minW="200px"
 										borderRadius="xl"
-										bg="black"
-										color="white"
+										bgGradient="linear(to-r, purple.400, pink.400)"
 										_hover={{
-											bg: "gray.800",
+											bgGradient: "linear(to-r, purple.500, pink.500)",
 											transform: "translateY(-2px)",
 											boxShadow: "xl",
 										}}
@@ -309,53 +250,27 @@ This is just the beginning of the next bull run. 📈
 											transform: "translateY(0px)",
 										}}
 									>
-										𝕏 Predict Viral Potential
+										🧠 Predict Viral Potential
 									</Button>
 								</HStack>
-
-								{creator.trim() && (
-									<Text fontSize="sm" color="gray.500">
-										Will analyze: @{cleanHandle(creator)}'s engagement patterns
-									</Text>
-								)}
 							</VStack>
 						</GlassCard>
 					</MotionBox>
 
-					{/* Loading State */}
+					{/* Loading State with Progress */}
 					{loading && (
 						<MotionBox
 							initial={{ opacity: 0, scale: 0.9 }}
 							animate={{ opacity: 1, scale: 1 }}
 							transition={{ duration: 0.3 }}
 						>
-							<TwitterProgress 
-								currentStep={progressStep}
-								currentMessage={progressMessage}
-								error={error}
-							/>
-						</MotionBox>
-					)}
-
-					{/* Creator Error Warning */}
-					{creatorError && !loading && (
-						<MotionBox
-							initial={{ opacity: 0, scale: 0.9 }}
-							animate={{ opacity: 1, scale: 1 }}
-							transition={{ duration: 0.3 }}
-						>
-							<Alert status="warning" borderRadius="lg">
-								<AlertIcon />
-								<Box>
-									<Text fontWeight="bold">𝕏 Account Lookup Failed</Text>
-									<AlertDescription>
-										{creatorError}
-									</AlertDescription>
-									<Text fontSize="sm" mt={2} color="gray.600">
-										Don't worry! We'll still analyze your original tweet content with general patterns.
-									</Text>
-								</Box>
-							</Alert>
+							<GlassCard p={6}>
+								<AnalysisProgress 
+									steps={[progressStep]}
+									currentStep={progressStep}
+									error={error}
+								/>
+							</GlassCard>
 						</MotionBox>
 					)}
 
@@ -377,71 +292,38 @@ This is just the beginning of the next bull run. 📈
 										/>
 										
 										<VStack spacing={2}>
-											<HStack spacing={2}>
-												<Text fontSize="2xl">
-													{getTwitterEmoji(results.viralProbability)}
-												</Text>
-												<Badge 
-													colorScheme={getViralCategoryColor(results.viralCategory)} 
-													fontSize="lg"
-													px={4}
-													py={2}
-													borderRadius="full"
-												>
-													{results.viralCategory} Viral Potential
-												</Badge>
-											</HStack>
+											<Badge 
+												colorScheme={getViralCategoryColor(results.viralCategory)} 
+												fontSize="lg"
+												px={4}
+												py={2}
+												borderRadius="full"
+											>
+												{results.viralCategory} Viral Potential
+											</Badge>
 											<Text color="gray.600">
-												{results.hasCreatorData 
-													? '✅ Personalized for your 𝕏 account' 
-													: creatorError
-														? '📊 General analysis (couldn\'t get account data)'
-														: '📊 General original tweet analysis'
-												}
+												{results.hasCreatorData ? '✅ Enhanced with creator data' : '📊 Content-only analysis'}
 											</Text>
 										</VStack>
 									</VStack>
 								</GlassCard>
 
-								{/* Expected 𝕏 Engagement */}
+								{/* Creator Data (if available) */}
 								{results.hasCreatorData && results.creatorData && (
-									<Card bg="white" borderRadius="xl" boxShadow="lg">
+									<GlassCard p={6}>
 										<CardHeader pb={2}>
 											<HStack spacing={3}>
-												<Icon as={FaTwitter} color="black" boxSize={5} />
-												<Heading size="md">Your Expected 𝕏 Engagement</Heading>
-												<Badge colorScheme="blue" fontSize="xs">
-													Powered by LunarCrush MCP
-												</Badge>
+												<Icon as={FaUser} color="blue.500" boxSize={5} />
+												<Heading size="md">Creator Analytics</Heading>
 											</HStack>
 										</CardHeader>
 										<CardBody>
 											<SimpleGrid columns={{ base: 2, md: 4 }} spacing={6}>
 												{[
-													{ 
-														label: '𝕏 Handle', 
-														value: `@${results.creatorData.handle}`, 
-														icon: FaTwitter,
-														color: 'gray' 
-													},
-													{ 
-														label: 'Followers', 
-														value: formatNumber(results.creatorData.followers), 
-														icon: FaHeart,
-														color: 'red' 
-													},
-													{ 
-														label: 'Avg Engagement', 
-														value: formatNumber(results.creatorData.engagements), 
-														icon: FaReply,
-														color: 'green' 
-													},
-													{ 
-														label: 'This Tweet', 
-														value: formatNumber(results.expectedEngagement), 
-														icon: FaShare,
-														color: 'purple' 
-													},
+													{ label: 'Handle', value: `@${results.creatorData.handle}`, color: 'blue' },
+													{ label: 'Followers', value: formatNumber(results.creatorData.followers), color: 'green' },
+													{ label: 'Engagements', value: formatNumber(results.creatorData.engagements), color: 'purple' },
+													{ label: 'Expected', value: formatNumber(results.expectedEngagement), color: 'orange' },
 												].map((stat, index) => (
 													<MotionBox
 														key={stat.label}
@@ -450,10 +332,7 @@ This is just the beginning of the next bull run. 📈
 														transition={{ duration: 0.5, delay: index * 0.1 }}
 													>
 														<Stat textAlign="center">
-															<HStack justify="center" mb={2}>
-																<Icon as={stat.icon} color={`${stat.color}.500`} />
-															</HStack>
-															<StatNumber fontSize="xl" color={`${stat.color}.500`}>
+															<StatNumber fontSize="2xl" color={`${stat.color}.500`}>
 																{stat.value}
 															</StatNumber>
 															<StatLabel fontSize="sm" color="gray.600">
@@ -464,45 +343,25 @@ This is just the beginning of the next bull run. 📈
 												))}
 											</SimpleGrid>
 										</CardBody>
-									</Card>
+									</GlassCard>
 								)}
 
-								{/* 𝕏 Psychology Analysis */}
+								{/* Psychology Scores */}
 								{results.psychologyScore && (
-									<Card bg="white" borderRadius="xl" boxShadow="lg">
+									<GlassCard p={6}>
 										<CardHeader pb={2}>
 											<HStack spacing={3}>
 												<Icon as={FaBrain} color="purple.500" boxSize={5} />
-												<Heading size="md">Why People Will Engage on 𝕏</Heading>
+												<Heading size="md">Psychology Analysis</Heading>
 											</HStack>
 										</CardHeader>
 										<CardBody>
 											<SimpleGrid columns={{ base: 2, md: 4 }} spacing={6}>
 												{[
-													{ 
-														key: 'emotional', 
-														label: 'Emotional Impact', 
-														desc: 'Makes people feel something',
-														emoji: '😍'
-													},
-													{ 
-														key: 'socialCurrency', 
-														label: 'Share Value', 
-														desc: 'Worth sharing to followers',
-														emoji: '🔄'
-													},
-													{ 
-														key: 'practicalValue', 
-														label: 'Useful Content', 
-														desc: 'Helpful or informative',
-														emoji: '💡'
-													},
-													{ 
-														key: 'story', 
-														label: 'Story Appeal', 
-														desc: 'Has narrative hook',
-														emoji: '📖'
-													},
+													{ key: 'emotional', label: 'Emotional Trigger', desc: 'Joy, surprise, etc.' },
+													{ key: 'socialCurrency', label: 'Social Currency', desc: 'Sharing value' },
+													{ key: 'practicalValue', label: 'Practical Value', desc: 'Useful info' },
+													{ key: 'story', label: 'Story Element', desc: 'Narrative appeal' },
 												].map((item, index) => (
 													<MotionBox
 														key={item.key}
@@ -511,9 +370,6 @@ This is just the beginning of the next bull run. 📈
 														transition={{ duration: 0.5, delay: index * 0.1 }}
 													>
 														<Stat textAlign="center">
-															<Text fontSize="2xl" mb={2}>
-																{item.emoji}
-															</Text>
 															<StatNumber fontSize="3xl" color="purple.500">
 																{results.psychologyScore[item.key]}%
 															</StatNumber>
@@ -528,18 +384,18 @@ This is just the beginning of the next bull run. 📈
 												))}
 											</SimpleGrid>
 										</CardBody>
-									</Card>
+									</GlassCard>
 								)}
 
-								{/* 𝕏 Tips & Hashtags */}
+								{/* Recommendations & Hashtags Grid */}
 								<SimpleGrid columns={{ base: 1, lg: 2 }} spacing={8} w="full">
-									{/* 𝕏 Optimization Tips */}
+									{/* Recommendations */}
 									{results.recommendations && results.recommendations.length > 0 && (
-										<Card bg="white" borderRadius="xl" boxShadow="lg">
+										<GlassCard p={6}>
 											<CardHeader pb={2}>
 												<HStack spacing={3}>
 													<Icon as={FaLightbulb} color="orange.500" boxSize={5} />
-													<Heading size="md">How to Get More Engagement</Heading>
+													<Heading size="md">Optimization Tips</Heading>
 												</HStack>
 											</CardHeader>
 											<CardBody>
@@ -561,18 +417,18 @@ This is just the beginning of the next bull run. 📈
 													))}
 												</VStack>
 											</CardBody>
-										</Card>
+										</GlassCard>
 									)}
 
-									{/* Hashtags & Best Times */}
+									{/* Hashtags & Timing */}
 									<VStack spacing={8}>
-										{/* Trending Hashtags */}
+										{/* Hashtags */}
 										{results.optimizedHashtags && results.optimizedHashtags.length > 0 && (
-											<Card bg="white" borderRadius="xl" boxShadow="lg" w="full">
+											<GlassCard p={6} w="full">
 												<CardHeader pb={2}>
 													<HStack spacing={3}>
 														<Icon as={FaHashtag} color="blue.500" boxSize={5} />
-														<Heading size="md">Trending Hashtags</Heading>
+														<Heading size="md">Optimized Hashtags</Heading>
 													</HStack>
 												</CardHeader>
 												<CardBody>
@@ -600,84 +456,43 @@ This is just the beginning of the next bull run. 📈
 														))}
 													</Wrap>
 												</CardBody>
-											</Card>
+											</GlassCard>
 										)}
 
-										{/* Best Tweet Times */}
+										{/* Timing */}
 										{results.optimalTiming && (
-											<Card bg="white" borderRadius="xl" boxShadow="lg" w="full">
+											<GlassCard p={6} w="full">
 												<CardHeader pb={2}>
 													<HStack spacing={3}>
 														<Icon as={FaClock} color="green.500" boxSize={5} />
-														<Heading size="md">Best Times to Tweet</Heading>
+														<Heading size="md">Optimal Timing</Heading>
 													</HStack>
 												</CardHeader>
 												<CardBody>
 													<VStack align="start" spacing={3}>
 														<HStack>
+															<Text fontWeight="bold" color="green.500">🕐 Best Time:</Text>
+															<Text>{results.optimalTiming.bestTime}</Text>
+														</HStack>
+														<HStack>
 															<Text fontWeight="bold" color="green.500">📅 Best Days:</Text>
 															<Text>{results.optimalTiming.bestDays}</Text>
 														</HStack>
 														<HStack>
-															<Text fontWeight="bold" color="green.500">🕐 Peak Hours:</Text>
-															<Text>{results.optimalTiming.bestTime}</Text>
-														</HStack>
-														<HStack>
-															<Text fontWeight="bold" color="green.500">🌍 Time Zone:</Text>
+															<Text fontWeight="bold" color="green.500">🌍 Timezone:</Text>
 															<Text>{results.optimalTiming.timezone}</Text>
 														</HStack>
 													</VStack>
 												</CardBody>
-											</Card>
+											</GlassCard>
 										)}
 									</VStack>
 								</SimpleGrid>
-
-								{/* LunarCrush MCP Branding */}
-								<Card bg="gray.50" borderRadius="xl" boxShadow="sm">
-									<CardBody>
-										<VStack spacing={4} textAlign="center">
-											<Divider />
-											<HStack spacing={3}>
-												<Icon as={FaDatabase} color="blue.500" boxSize={5} />
-												<VStack spacing={1} align="start">
-													<Text fontWeight="bold" color="gray.800">
-														Powered by LunarCrush MCP
-													</Text>
-													<Text fontSize="sm" color="gray.600">
-														Real-time social data via Model Context Protocol
-													</Text>
-												</VStack>
-												<Link
-													href="https://lunarcrush.com/developers/api/endpoints"
-													isExternal
-													color="blue.500"
-													fontSize="sm"
-													fontWeight="medium"
-													display="flex"
-													alignItems="center"
-													gap={1}
-												>
-													Learn More <Icon as={FaExternalLinkAlt} boxSize={3} />
-												</Link>
-											</HStack>
-											<HStack spacing={6} fontSize="xs" color="gray.500">
-												<Text>✅ Real Creator Data</Text>
-												<Text>🔄 Live Social Metrics</Text>
-												<Text>🤖 AI-Enhanced Analysis</Text>
-												<Text>📊 MCP Integration</Text>
-											</HStack>
-										</VStack>
-									</CardBody>
-								</Card>
 							</VStack>
 						</MotionBox>
 					)}
 				</VStack>
 			</Container>
-
-			{/* Professional Footer */}
-			<Footer />
 		</Box>
 	);
 }
