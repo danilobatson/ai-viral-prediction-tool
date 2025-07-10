@@ -24,6 +24,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@google/generative-ai": "^0.24.1",
+    "@modelcontextprotocol/sdk": "^1.15.0",
     "@radix-ui/react-slot": "^1.2.3",
     "axios": "^1.6.0",
     "class-variance-authority": "^0.7.1",
@@ -59,5 +60,6 @@
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
-  }
+  },
+  "type": "module"
 }

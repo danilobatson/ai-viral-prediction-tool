@@ -1,0 +1,169 @@
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
+
+// Apply realistic confidence constraints based on actual follower count
+function applyRealisticConfidenceConstraints(data, followerCount = 0) {
+  let maxConfidence;
+  
+  if (followerCount < 1000) {
+    maxConfidence = 35;
+  } else if (followerCount < 10000) {
+    maxConfidence = 55;
+  } else if (followerCount < 100000) {
+    maxConfidence = 70;
+  } else if (followerCount < 1000000) {
+    maxConfidence = 85;
+  } else {
+    maxConfidence = 95;
+  }
+
+  // Only constrain if confidence exceeds realistic maximum
+  const confidence = Math.min(data.confidence || 50, maxConfidence);
+  
+  return {
+    ...data,
+    confidence: Math.round(confidence)
+  };
+}
+
+// Build optimized prompt for Gemini
+function buildOptimizedPrompt(content, creatorData) {
+  const followers = creatorData?.followers || 0;
+  const engagement = creatorData?.engagements || 0;
+  
+  return `Analyze viral potential for this social media content.
+
+Content: "${content}"
+Creator: ${followers} followers, ${engagement} recent engagements
+
+Return ONLY valid JSON in this exact format:
+{
+  "confidence": <realistic percentage 10-95>,
+  "platformFit": <0-100>,
+  "contentScore": <0-100>, 
+  "creatorAuthority": <-20 to 50>,
+  "expectedEngagement": <realistic number>,
+  "optimizations": ["tip1", "tip2", "tip3"],
+  "insights": ["insight1", "insight2"],
+  "hashtags": ["#tag1", "#tag2", "#tag3"],
+  "keyInsight": "Brief viral assessment"
+}
+
+Confidence constraints:
+- <1K followers: max 35%
+- 1K-10K: max 55%  
+- 10K-100K: max 70%
+- 100K-1M: max 85%
+- >1M: max 95%`;
+}
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ 
+      error: 'Method not allowed',
+      message: 'Use POST method to analyze content'
+    });
+  }
+
+  try {
+    const { content, creatorData } = req.body;
+    
+    if (!content?.trim()) {
+      return res.status(400).json({ 
+        error: 'Content required',
+        message: 'Please provide content to analyze'
+      });
+    }
+
+    // Check if Google AI API key is configured
+    if (!process.env.GOOGLE_AI_API_KEY) {
+      return res.status(500).json({
+        error: 'API key missing',
+        message: 'Google AI API key not configured'
+      });
+    }
+
+    // Initialize Gemini model
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 600
+      }
+    });
+
+    const prompt = buildOptimizedPrompt(content, creatorData);
+    
+    // Call Gemini API with timeout
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('AI analysis timeout after 10 seconds')), 10000);
+    });
+
+    const analysisPromise = model.generateContent(prompt)
+      .then(result => result.response)
+      .then(response => response.text());
+
+    const aiResponse = await Promise.race([analysisPromise, timeoutPromise]);
+
+    // Parse JSON response - no fallbacks, must be valid
+    let analysisData;
+    try {
+      // Try to extract JSON from response
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No JSON found in AI response');
+      }
+      
+      analysisData = JSON.parse(jsonMatch[0]);
+      
+      // Validate required fields
+      const requiredFields = ['confidence', 'platformFit', 'contentScore', 'expectedEngagement'];
+      for (const field of requiredFields) {
+        if (analysisData[field] === undefined || analysisData[field] === null) {
+          throw new Error(`Missing required field: ${field}`);
+        }
+      }
+      
+    } catch (parseError) {
+      return res.status(500).json({
+        error: 'AI response parsing failed',
+        message: 'Unable to parse AI analysis results',
+        details: parseError.message,
+        rawResponse: aiResponse.substring(0, 200) + '...'
+      });
+    }
+
+    // Apply realistic constraints to AI response
+    const finalAnalysis = applyRealisticConfidenceConstraints(
+      analysisData, 
+      creatorData?.followers || 0
+    );
+
+    res.status(200).json(finalAnalysis);
+
+  } catch (error) {
+    console.error('API Error:', error);
+    
+    // Return specific error details to help debugging
+    if (error.message.includes('timeout')) {
+      return res.status(408).json({
+        error: 'Request timeout',
+        message: 'AI analysis took too long to complete'
+      });
+    }
+    
+    if (error.message.includes('API_KEY')) {
+      return res.status(401).json({
+        error: 'Authentication failed',
+        message: 'Invalid Google AI API key'
+      });
+    }
+    
+    return res.status(500).json({
+      error: 'Analysis failed',
+      message: error.message || 'Unknown error occurred',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+}
