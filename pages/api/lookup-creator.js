@@ -23,72 +23,86 @@ export default async function handler(req, res) {
       })
     }
 
-    // Clean the creator handle - remove @ symbol if present
     const cleanCreator = creator.trim().replace(/^@/, '')
-    console.log(`🔍 Looking up creator: ${cleanCreator} using LLM-orchestrated MCP calls`)
+    console.log(`🔍 Optimized creator lookup for: ${cleanCreator}`)
 
-    // Check if API keys are configured
-    if (!process.env.LUNARCRUSH_API_KEY) {
+    if (!process.env.LUNARCRUSH_API_KEY || !process.env.GOOGLE_GEMINI_API_KEY) {
       return res.status(500).json({
         success: false,
-        error: 'LunarCrush API key not configured',
-      })
-    }
-    
-    if (!process.env.GOOGLE_GEMINI_API_KEY) {
-      return res.status(500).json({
-        success: false,
-        error: 'Google Gemini API key not configured',
+        error: 'API keys not configured',
       })
     }
 
-    // Create MCP client connection
     mcpClient = await createMcpClient()
     
-    // Use LLM to orchestrate MCP tool calls
-    const orchestrationPrompt = `You are a social media data analyst. I need comprehensive data for creator "${cleanCreator}".
+    // Optimized orchestration prompt with strategic thinking
+    const orchestrationPrompt = `ROLE: Social media data strategist
 
-AVAILABLE MCP TOOLS:
-- Creator: Get creator metrics (screenName, network)
-- Topic: Get topic/keyword data (topic)
+OBJECTIVE: Get comprehensive creator data for "${cleanCreator}"
 
-TASK: Create a plan to get complete social media data for "${cleanCreator}"
+AVAILABLE TOOLS:
+- Creator: {"screenName": "handle", "network": "x"} → follower metrics, engagement data
+- Topic: {"topic": "handle"} → social sentiment, trending data  
 
-Respond with JSON array of tool calls:
+STRATEGY: Design optimal tool sequence for complete social analysis.
+
+FEW-SHOT EXAMPLE:
+For "elonmusk":
 [
   {
-    "tool": "Creator", 
-    "args": {"screenName": "${cleanCreator}", "network": "x"},
-    "reason": "Get follower count and engagement metrics"
+    "tool": "Creator",
+    "args": {"screenName": "elonmusk", "network": "x"},
+    "reason": "Primary follower and engagement metrics"
+  },
+  {
+    "tool": "Topic", 
+    "args": {"topic": "elon musk"},
+    "reason": "Social sentiment and trending analysis"
   }
 ]
 
-Use exact tool names and proper parameters. No explanations, just JSON array.`
+YOUR TASK: Create tool sequence for "${cleanCreator}". Return JSON array only.`
 
-    console.log('🤖 Using LLM to orchestrate MCP calls...')
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
+    console.log('🤖 Using optimized LLM orchestration...')
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.0-flash-exp',
+      generationConfig: {
+        temperature: 0.3, // Lower temperature for more consistent tool selection
+        topK: 20,
+        maxOutputTokens: 512,
+      }
+    })
+    
     const orchestrationResult = await model.generateContent(orchestrationPrompt)
     const orchestrationText = orchestrationResult.response.text()
     
-    // Parse LLM orchestration response
+    // Enhanced tool call parsing
     let toolCalls
     try {
       const jsonMatch = orchestrationText.match(/\[[\s\S]*\]/)
       if (!jsonMatch) {
-        throw new Error('No valid JSON array found in LLM response')
+        // Fallback to basic tool call if orchestration fails
+        toolCalls = [{
+          tool: "Creator",
+          args: {"screenName": cleanCreator, "network": "x"},
+          reason: "Get basic creator metrics"
+        }]
+      } else {
+        toolCalls = JSON.parse(jsonMatch[0])
       }
-      toolCalls = JSON.parse(jsonMatch[0])
     } catch (parseError) {
-      console.error('❌ Failed to parse LLM orchestration:', parseError)
-      return res.status(500).json({
-        success: false,
-        error: 'LLM failed to create proper tool orchestration plan'
-      })
+      console.error('❌ Orchestration parsing failed:', parseError)
+      // Fallback strategy
+      toolCalls = [{
+        tool: "Creator",
+        args: {"screenName": cleanCreator, "network": "x"},
+        reason: "Fallback creator lookup"
+      }]
     }
 
-    console.log('🎯 LLM orchestrated tool calls:', toolCalls)
+    console.log('🎯 Optimized tool calls:', toolCalls)
 
-    // Execute the LLM-orchestrated tool calls
+    // Execute orchestrated tool calls with better error handling
     let combinedResults = []
     for (const toolCall of toolCalls) {
       try {
@@ -97,53 +111,78 @@ Use exact tool names and proper parameters. No explanations, just JSON array.`
           tool: toolCall.tool,
           args: toolCall.args,
           reason: toolCall.reason,
-          result: result
+          result: result,
+          success: true
         })
       } catch (toolError) {
         console.error(`❌ Tool ${toolCall.tool} failed:`, toolError)
-        // Continue with other tools
+        combinedResults.push({
+          tool: toolCall.tool,
+          args: toolCall.args,
+          reason: toolCall.reason,
+          error: toolError.message,
+          success: false
+        })
       }
     }
 
-    if (combinedResults.length === 0) {
+    if (combinedResults.filter(r => r.success).length === 0) {
       return res.status(404).json({
         success: false,
         error: `No data found for @${cleanCreator} in LunarCrush database`,
       })
     }
 
-    // Parse results from LLM-orchestrated MCP calls
+    // Enhanced data extraction with multiple patterns
     let followerCount = 0
     let engagements = 0
+    let sentiment = null
     
-    for (const toolResult of combinedResults) {
+    for (const toolResult of combinedResults.filter(r => r.success)) {
       if (toolResult.result && toolResult.result.content) {
         for (const content of toolResult.result.content) {
           if (content.type === 'text') {
             const text = content.text
-            console.log(`📝 ${toolResult.tool} Response:`, text)
+            console.log(`📝 ${toolResult.tool} Response:`, text.substring(0, 200) + '...')
             
-            // Extract follower count
-            const followerMatch = text.match(/(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*followers/i) || 
-                                 text.match(/followers[:\s]*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/i) ||
-                                 text.match(/Followers:\s*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/i)
+            // Enhanced follower extraction patterns
+            const followerPatterns = [
+              /(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*followers/i,
+              /followers[:\s]*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/i,
+              /Followers:\s*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/i,
+              /(\d{1,3}(?:,\d{3})*(?:\.\d+)?)M?\s*followers/i
+            ]
             
-            if (followerMatch) {
-              followerCount = Math.max(followerCount, parseInt(followerMatch[1].replace(/,/g, '')))
+            for (const pattern of followerPatterns) {
+              const match = text.match(pattern)
+              if (match) {
+                const count = parseFloat(match[1].replace(/,/g, ''))
+                const multiplier = text.includes('M') || text.includes('million') ? 1000000 : 1
+                followerCount = Math.max(followerCount, Math.floor(count * multiplier))
+                break
+              }
             }
 
-            // Extract engagements
-            const engagementMatch = text.match(/(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*engagements/i) ||
-                                   text.match(/Engagements:\s*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/i)
+            // Extract engagement data
+            const engagementPattern = /(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*engagements?/i
+            const engagementMatch = text.match(engagementPattern)
             if (engagementMatch) {
               engagements = Math.max(engagements, parseInt(engagementMatch[1].replace(/,/g, '')))
+            }
+
+            // Extract sentiment if available
+            if (toolResult.tool === 'Topic') {
+              const sentimentPattern = /(bullish|bearish|positive|negative|neutral)/i
+              const sentimentMatch = text.match(sentimentPattern)
+              if (sentimentMatch) {
+                sentiment = sentimentMatch[1].toLowerCase()
+              }
             }
           }
         }
       }
     }
 
-    // Validate we have real data
     if (followerCount === 0) {
       return res.status(404).json({
         success: false,
@@ -151,30 +190,33 @@ Use exact tool names and proper parameters. No explanations, just JSON array.`
       })
     }
 
-    console.log(`✅ LLM-orchestrated lookup found @${cleanCreator}: ${followerCount.toLocaleString()} followers`)
+    console.log(`✅ Optimized lookup found @${cleanCreator}: ${followerCount.toLocaleString()} followers`)
 
-    // Return standardized creator data
+    // Enhanced response with orchestration metadata
     res.status(200).json({
       success: true,
       data: {
         handle: cleanCreator,
         followerCount: followerCount,
         followers: followerCount,
-        engagements: engagements,
+        engagements: engagements || null,
+        sentiment: sentiment,
         influenceScore: null,
         engagement: null,
         verified: false,
-        source: 'LLM-Orchestrated MCP Analysis'
+        source: 'Optimized LLM-Orchestrated MCP Analysis'
       },
       metadata: {
-        source: 'LunarCrush MCP via LLM Orchestration',
-        toolsUsed: toolCalls.map(t => t.tool),
+        source: 'LunarCrush MCP via Optimized LLM Orchestration',
+        toolsExecuted: combinedResults.length,
+        successfulTools: combinedResults.filter(r => r.success).length,
+        orchestrationStrategy: toolCalls.map(t => `${t.tool}: ${t.reason}`),
         requestTime: new Date().toISOString()
       }
     })
 
   } catch (error) {
-    console.error('❌ LLM-Orchestrated Creator Lookup Error:', error)
+    console.error('❌ Optimized Creator Lookup Error:', error)
     return res.status(500).json({
       success: false,
       error: `Creator lookup failed: ${error.message}`,
