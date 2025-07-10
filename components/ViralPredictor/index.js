@@ -34,10 +34,11 @@ import {
 	FaLightbulb,
 	FaChartLine,
 	FaFire,
+	FaInfoCircle,
 } from 'react-icons/fa';
-import { LoadingSpinner } from '../ui/LoadingSpinner';
-import { ProgressRing } from '../ui/ProgressRing';
 import { formatNumber } from '../../lib/number-utils';
+import AnalysisProgress from '../ui/AnalysisProgress';
+import CategoryTooltip from '../ui/CategoryTooltip';
 
 const MotionBox = motion(Box);
 
@@ -47,6 +48,8 @@ export default function ViralPredictor() {
 	const [loading, setLoading] = useState(false);
 	const [results, setResults] = useState(null);
 	const [error, setError] = useState('');
+	const [progressStep, setProgressStep] = useState('');
+	const [progressSteps, setProgressSteps] = useState([]);
 	const toast = useToast();
 
 	const handlePredict = async () => {
@@ -64,10 +67,27 @@ export default function ViralPredictor() {
 		setLoading(true);
 		setError('');
 		setResults(null);
+		setProgressStep('connecting');
+		setProgressSteps(['connecting']);
 
 		try {
 			console.log('🚀 Starting viral prediction with REAL MCP data...');
-			
+
+			// Simulate progress updates during API call
+			const updateProgress = (step, message) => {
+				setProgressStep(step);
+				setProgressSteps(prev => [...prev, step]);
+				console.log(`📊 Progress: ${step} - ${message}`);
+			};
+
+			updateProgress('connecting', 'Connecting to LunarCrush MCP...');
+
+			if (creator.trim()) {
+				updateProgress('fetching', 'Fetching real creator data...');
+			}
+
+			updateProgress('analyzing', 'Running viral analysis...');
+
 			const predictionResponse = await fetch('/api/predict-viral-ai', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -83,12 +103,13 @@ export default function ViralPredictor() {
 				throw new Error(predictionResult.error);
 			}
 
+			updateProgress('complete', 'Analysis complete!');
 			setResults(predictionResult);
 
 			toast({
 				title: `${predictionResult.viralProbability}% Viral Probability!`,
-				description: predictionResult.hasCreatorData 
-					? 'Analysis based on real MCP creator data' 
+				description: predictionResult.hasCreatorData
+					? 'Analysis based on real MCP creator data'
 					: 'Content-only analysis (no creator data)',
 				status: predictionResult.hasCreatorData ? 'success' : 'info',
 				duration: 5000,
@@ -97,6 +118,7 @@ export default function ViralPredictor() {
 
 		} catch (err) {
 			setError(err.message);
+			setProgressStep('error');
 			toast({
 				title: 'Analysis Failed',
 				description: err.message,
@@ -119,6 +141,16 @@ export default function ViralPredictor() {
 		}
 	};
 
+	const getViralCategoryEmoji = (category) => {
+		switch (category) {
+			case 'Ultra High': return '🔥'
+			case 'High': return '⭐'
+			case 'Moderate': return '📈'
+			case 'Low': return '📊'
+			default: return '📊'
+		}
+	};
+
 	return (
 		<Box maxW="6xl" mx="auto" p={6}>
 			<VStack spacing={8} align="stretch">
@@ -135,6 +167,52 @@ export default function ViralPredictor() {
 					</Text>
 				</Box>
 
+				{/* Viral Categories Info */}
+				<Card borderRadius="lg" bg="blue.50" borderColor="blue.200" borderWidth="1px">
+					<CardHeader pb={2}>
+						<HStack spacing={3}>
+							<Icon as={FaInfoCircle} color="blue.500" boxSize={5} />
+							<Heading size="sm">Viral Category Definitions</Heading>
+						</HStack>
+					</CardHeader>
+					<CardBody pt={0}>
+						<SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+							{[
+								{ name: 'Ultra High', range: '75%+', color: 'red', emoji: '🔥' },
+								{ name: 'High', range: '60-74%', color: 'orange', emoji: '⭐' },
+								{ name: 'Moderate', range: '40-59%', color: 'yellow', emoji: '📈' },
+								{ name: 'Low', range: '0-39%', color: 'gray', emoji: '📊' }
+							].map(category => (
+								<CategoryTooltip key={category.name} category={category.name}>
+									<Box
+										p={3}
+										borderRadius="lg"
+										bg={`${category.color}.50`}
+										borderColor={`${category.color}.200`}
+										borderWidth="1px"
+										cursor="pointer"
+										_hover={{ transform: 'scale(1.02)' }}
+										transition="all 0.2s"
+									>
+										<VStack spacing={1}>
+											<Text fontSize="lg">{category.emoji}</Text>
+											<Text fontSize="sm" fontWeight="bold" color={`${category.color}.600`}>
+												{category.name}
+											</Text>
+											<Text fontSize="xs" color="gray.600">
+												{category.range}
+											</Text>
+										</VStack>
+									</Box>
+								</CategoryTooltip>
+							))}
+						</SimpleGrid>
+						<Text fontSize="xs" color="gray.600" mt={3} textAlign="center">
+							💡 Hover over categories to see detailed definitions and examples
+						</Text>
+					</CardBody>
+				</Card>
+
 				{/* Input Section */}
 				<Card borderRadius="lg">
 					<CardBody>
@@ -142,7 +220,7 @@ export default function ViralPredictor() {
 							<Textarea
 								value={content}
 								onChange={(e) => setContent(e.target.value)}
-								placeholder="Enter your content here... 
+								placeholder="Enter your content here...
 
 🚀 Bitcoin just broke through $100K resistance!
 
@@ -155,7 +233,7 @@ This is just the beginning of the next bull run. 📈
 								minH="150px"
 								resize="vertical"
 							/>
-							
+
 							<HStack w="full" spacing={4}>
 								<Input
 									value={creator}
@@ -179,30 +257,21 @@ This is just the beginning of the next bull run. 📈
 					</CardBody>
 				</Card>
 
-				{/* Loading State */}
+				{/* Loading State with Progress */}
 				{loading && (
 					<Card borderRadius="lg" borderColor="purple.200" borderWidth="2px">
 						<CardBody>
-							<VStack spacing={4}>
-								<LoadingSpinner />
-								<VStack spacing={2}>
-									<Text fontWeight="bold" color="purple.600">
-										🧠 Analyzing Viral Potential with REAL Data
-									</Text>
-									<Text fontSize="sm" color="gray.600" textAlign="center">
-										{creator.trim() 
-											? '• Fetching real-time creator data via LunarCrush MCP\n• LLM parsing engagement metrics\n• Psychology-enhanced viral analysis'
-											: '• Content-only analysis (no creator specified)\n• Psychology-enhanced viral analysis'
-										}
-									</Text>
-								</VStack>
-							</VStack>
+							<AnalysisProgress
+								steps={progressSteps}
+								currentStep={progressStep}
+								error={error}
+							/>
 						</CardBody>
 					</Card>
 				)}
 
 				{/* Error Display */}
-				{error && (
+				{error && !loading && (
 					<Alert status="error" borderRadius="lg">
 						<AlertIcon />
 						<VStack align="start" spacing={1}>
@@ -213,7 +282,7 @@ This is just the beginning of the next bull run. 📈
 				)}
 
 				{/* Results Section - ONLY REAL DATA */}
-				{results && (
+				{results && !loading && (
 					<MotionBox
 						w="full"
 						initial={{ opacity: 0, y: 20 }}
@@ -221,21 +290,39 @@ This is just the beginning of the next bull run. 📈
 						transition={{ duration: 0.6 }}
 					>
 						<VStack spacing={6}>
-							{/* Viral Probability */}
+							{/* Viral Probability with Category Tooltip */}
 							<Card w="full" borderColor={`${getViralCategoryColor(results.viralCategory)}.200`} borderWidth="2px">
 								<CardBody textAlign="center">
 									<VStack spacing={4}>
-										<ProgressRing 
-											value={results.viralProbability} 
-											max={85}
-											color={getViralCategoryColor(results.viralCategory)}
-											size="120px"
-										/>
+										<Box position="relative">
+											<Box
+												width="120px"
+												height="120px"
+												borderRadius="50%"
+												bg={`${getViralCategoryColor(results.viralCategory)}.100`}
+												display="flex"
+												alignItems="center"
+												justifyContent="center"
+												position="relative"
+											>
+												<Text fontSize="3xl" fontWeight="bold" color={`${getViralCategoryColor(results.viralCategory)}.600`}>
+													{results.viralProbability}%
+												</Text>
+											</Box>
+										</Box>
 										<VStack spacing={1}>
 											<Heading size="lg">{results.viralProbability}% Viral Probability</Heading>
-											<Badge colorScheme={getViralCategoryColor(results.viralCategory)} fontSize="md">
-												{results.viralCategory}
-											</Badge>
+											<CategoryTooltip category={results.viralCategory}>
+												<Badge
+													colorScheme={getViralCategoryColor(results.viralCategory)}
+													fontSize="md"
+													cursor="pointer"
+													_hover={{ transform: 'scale(1.05)' }}
+													transition="all 0.2s"
+												>
+													{getViralCategoryEmoji(results.viralCategory)} {results.viralCategory}
+												</Badge>
+											</CategoryTooltip>
 											<Text fontSize="sm" color="gray.600">
 												{results.hasCreatorData ? '✅ Based on REAL creator data' : '📊 Content-only analysis'}
 											</Text>
