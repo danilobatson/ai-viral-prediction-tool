@@ -23,86 +23,72 @@ export default async function handler(req, res) {
       })
     }
 
+    // Clean the creator handle - remove @ symbol if present
     const cleanCreator = creator.trim().replace(/^@/, '')
-    console.log(`🔍 Optimized creator lookup for: ${cleanCreator}`)
+    console.log(`🔍 Looking up creator: ${cleanCreator} using LLM-orchestrated MCP calls`)
 
-    if (!process.env.LUNARCRUSH_API_KEY || !process.env.GOOGLE_GEMINI_API_KEY) {
+    // Check if API keys are configured
+    if (!process.env.LUNARCRUSH_API_KEY) {
       return res.status(500).json({
         success: false,
-        error: 'API keys not configured',
+        error: 'LunarCrush API key not configured',
+      })
+    }
+    
+    if (!process.env.GOOGLE_GEMINI_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        error: 'Google Gemini API key not configured',
       })
     }
 
+    // Create MCP client connection
     mcpClient = await createMcpClient()
     
-    // Optimized orchestration prompt with strategic thinking
-    const orchestrationPrompt = `ROLE: Social media data strategist
+    // Use LLM to orchestrate MCP tool calls
+    const orchestrationPrompt = `You are a social media data analyst. I need comprehensive data for creator "${cleanCreator}".
 
-OBJECTIVE: Get comprehensive creator data for "${cleanCreator}"
+AVAILABLE MCP TOOLS:
+- Creator: Get creator metrics (screenName, network)
+- Topic: Get topic/keyword data (topic)
 
-AVAILABLE TOOLS:
-- Creator: {"screenName": "handle", "network": "x"} → follower metrics, engagement data
-- Topic: {"topic": "handle"} → social sentiment, trending data  
+TASK: Create a plan to get complete social media data for "${cleanCreator}"
 
-STRATEGY: Design optimal tool sequence for complete social analysis.
-
-FEW-SHOT EXAMPLE:
-For "elonmusk":
+Respond with JSON array of tool calls:
 [
   {
-    "tool": "Creator",
-    "args": {"screenName": "elonmusk", "network": "x"},
-    "reason": "Primary follower and engagement metrics"
-  },
-  {
-    "tool": "Topic", 
-    "args": {"topic": "elon musk"},
-    "reason": "Social sentiment and trending analysis"
+    "tool": "Creator", 
+    "args": {"screenName": "${cleanCreator}", "network": "x"},
+    "reason": "Get follower count and engagement metrics"
   }
 ]
 
-YOUR TASK: Create tool sequence for "${cleanCreator}". Return JSON array only.`
+Use exact tool names and proper parameters. No explanations, just JSON array.`
 
-    console.log('🤖 Using optimized LLM orchestration...')
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.0-flash-exp',
-      generationConfig: {
-        temperature: 0.3, // Lower temperature for more consistent tool selection
-        topK: 20,
-        maxOutputTokens: 512,
-      }
-    })
-    
+    console.log('🤖 Using LLM to orchestrate MCP calls...')
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
     const orchestrationResult = await model.generateContent(orchestrationPrompt)
     const orchestrationText = orchestrationResult.response.text()
     
-    // Enhanced tool call parsing
+    // Parse LLM orchestration response
     let toolCalls
     try {
       const jsonMatch = orchestrationText.match(/\[[\s\S]*\]/)
       if (!jsonMatch) {
-        // Fallback to basic tool call if orchestration fails
-        toolCalls = [{
-          tool: "Creator",
-          args: {"screenName": cleanCreator, "network": "x"},
-          reason: "Get basic creator metrics"
-        }]
-      } else {
-        toolCalls = JSON.parse(jsonMatch[0])
+        throw new Error('No valid JSON array found in LLM response')
       }
+      toolCalls = JSON.parse(jsonMatch[0])
     } catch (parseError) {
-      console.error('❌ Orchestration parsing failed:', parseError)
-      // Fallback strategy
-      toolCalls = [{
-        tool: "Creator",
-        args: {"screenName": cleanCreator, "network": "x"},
-        reason: "Fallback creator lookup"
-      }]
+      console.error('❌ Failed to parse LLM orchestration:', parseError)
+      return res.status(500).json({
+        success: false,
+        error: 'LLM failed to create proper tool orchestration plan'
+      })
     }
 
-    console.log('🎯 Optimized tool calls:', toolCalls)
+    console.log('🎯 LLM orchestrated tool calls:', toolCalls)
 
-    // Execute orchestrated tool calls with better error handling
+    // Execute the LLM-orchestrated tool calls
     let combinedResults = []
     for (const toolCall of toolCalls) {
       try {
@@ -111,112 +97,125 @@ YOUR TASK: Create tool sequence for "${cleanCreator}". Return JSON array only.`
           tool: toolCall.tool,
           args: toolCall.args,
           reason: toolCall.reason,
-          result: result,
-          success: true
+          result: result
         })
       } catch (toolError) {
         console.error(`❌ Tool ${toolCall.tool} failed:`, toolError)
-        combinedResults.push({
-          tool: toolCall.tool,
-          args: toolCall.args,
-          reason: toolCall.reason,
-          error: toolError.message,
-          success: false
-        })
+        // Continue with other tools
       }
     }
 
-    if (combinedResults.filter(r => r.success).length === 0) {
+    if (combinedResults.length === 0) {
       return res.status(404).json({
         success: false,
         error: `No data found for @${cleanCreator} in LunarCrush database`,
       })
     }
 
-    // Enhanced data extraction with multiple patterns
-    let followerCount = 0
-    let engagements = 0
-    let sentiment = null
-    
-    for (const toolResult of combinedResults.filter(r => r.success)) {
+    // Collect all MCP response text for LLM parsing
+    let allMcpText = ''
+    for (const toolResult of combinedResults) {
       if (toolResult.result && toolResult.result.content) {
         for (const content of toolResult.result.content) {
           if (content.type === 'text') {
-            const text = content.text
-            console.log(`📝 ${toolResult.tool} Response:`, text.substring(0, 200) + '...')
-            
-            // Enhanced follower extraction patterns
-            const followerPatterns = [
-              /(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*followers/i,
-              /followers[:\s]*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/i,
-              /Followers:\s*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/i,
-              /(\d{1,3}(?:,\d{3})*(?:\.\d+)?)M?\s*followers/i
-            ]
-            
-            for (const pattern of followerPatterns) {
-              const match = text.match(pattern)
-              if (match) {
-                const count = parseFloat(match[1].replace(/,/g, ''))
-                const multiplier = text.includes('M') || text.includes('million') ? 1000000 : 1
-                followerCount = Math.max(followerCount, Math.floor(count * multiplier))
-                break
-              }
-            }
-
-            // Extract engagement data
-            const engagementPattern = /(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*engagements?/i
-            const engagementMatch = text.match(engagementPattern)
-            if (engagementMatch) {
-              engagements = Math.max(engagements, parseInt(engagementMatch[1].replace(/,/g, '')))
-            }
-
-            // Extract sentiment if available
-            if (toolResult.tool === 'Topic') {
-              const sentimentPattern = /(bullish|bearish|positive|negative|neutral)/i
-              const sentimentMatch = text.match(sentimentPattern)
-              if (sentimentMatch) {
-                sentiment = sentimentMatch[1].toLowerCase()
-              }
-            }
+            allMcpText += content.text + '\n\n'
           }
         }
       }
     }
 
-    if (followerCount === 0) {
+    console.log('===== RAW MCP RESPONSE FOR LLM PARSING =====')
+    console.log(allMcpText)
+    console.log('============================================')
+
+    // Use LLM to parse the MCP response data
+    const parsingPrompt = `You are a data extraction specialist. Parse this social media creator data and extract specific metrics.
+
+MCP RESPONSE DATA:
+${allMcpText}
+
+TASK: Extract these exact data points and return as JSON:
+{
+  "handle": "creator_username_without_@",
+  "followerCount": number_of_followers_as_integer,
+  "engagements": total_engagements_as_integer,
+  "verified": true_or_false_if_mentioned,
+  "platform": "twitter_or_x",
+  "success": true
+}
+
+PARSING RULES:
+- Look for "Followers:" or "followers" and extract the number (remove commas)
+- Look for "Engagements:" or "engagements" and extract the number (remove commas)  
+- Convert all text numbers like "111,042,572" to integers like 111042572
+- If a data point is not found, use 0 for numbers and false for booleans
+- Only return the JSON object, no explanations
+
+Creator handle: ${cleanCreator}`
+
+    console.log('🧠 Using LLM to parse MCP response data...')
+    const parsingResult = await model.generateContent(parsingPrompt)
+    const parsingText = parsingResult.response.text()
+    
+    console.log('🎯 LLM parsing result:', parsingText)
+
+    // Extract and validate JSON from LLM response
+    let creatorData
+    try {
+      const jsonMatch = parsingText.match(/\{[\s\S]*\}/)
+      if (!jsonMatch) {
+        throw new Error('No valid JSON found in LLM parsing response')
+      }
+      creatorData = JSON.parse(jsonMatch[0])
+      
+      // Validate required fields
+      if (!creatorData.handle || typeof creatorData.followerCount !== 'number') {
+        throw new Error('LLM parsing did not return valid creator data structure')
+      }
+      
+    } catch (parseError) {
+      console.error('❌ Failed to parse LLM extraction:', parseError)
+      console.error('Raw LLM response:', parsingText)
+      return res.status(500).json({
+        success: false,
+        error: 'LLM failed to extract creator data from MCP response'
+      })
+    }
+
+    // Validate we have meaningful data
+    if (creatorData.followerCount === 0) {
       return res.status(404).json({
         success: false,
         error: `No follower data found for @${cleanCreator} in LunarCrush database`,
       })
     }
 
-    console.log(`✅ Optimized lookup found @${cleanCreator}: ${followerCount.toLocaleString()} followers`)
+    console.log(`✅ LLM extracted data for @${creatorData.handle}: ${creatorData.followerCount.toLocaleString()} followers, ${creatorData.engagements.toLocaleString()} engagements`)
 
-    // Enhanced response with orchestration metadata
+    // Return standardized creator data
     res.status(200).json({
       success: true,
       data: {
-        handle: cleanCreator,
-        followerCount: followerCount,
-        followers: followerCount,
-        engagements: engagements || null,
-        sentiment: sentiment,
+        handle: creatorData.handle,
+        followerCount: creatorData.followerCount,
+        followers: creatorData.followerCount,
+        engagements: creatorData.engagements,
         influenceScore: null,
         engagement: null,
-        verified: false,
-        source: 'Optimized LLM-Orchestrated MCP Analysis'
+        verified: creatorData.verified,
+        platform: creatorData.platform,
+        source: 'LLM-Parsed MCP Analysis'
       },
       metadata: {
-        source: 'LunarCrush MCP via Optimized LLM Orchestration',
-        toolsExecuted: combinedResults.length,
-        successfulTools: combinedResults.filter(r => r.success).length,
-        orchestrationStrategy: toolCalls.map(t => `${t.tool}: ${t.reason}`),
-        requestTime: new Date().toISOString()
+        source: 'LunarCrush MCP via LLM Parsing',
+        toolsUsed: toolCalls.map(t => t.tool),
+        requestTime: new Date().toISOString(),
+        parsingMethod: 'Gemini-2.0-flash-exp'
       }
     })
 
   } catch (error) {
-    console.error('❌ Optimized Creator Lookup Error:', error)
+    console.error('❌ LLM-Orchestrated Creator Lookup Error:', error)
     return res.status(500).json({
       success: false,
       error: `Creator lookup failed: ${error.message}`,

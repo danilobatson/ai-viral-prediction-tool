@@ -81,13 +81,6 @@ export default function Home() {
     { icon: SiChakraui, name: "Chakra UI", color: "teal.500" },
   ]
 
-  const stats = [
-    { number: "221M+", label: "Creator Follower Capacity" },
-    { number: "88%", label: "Average Prediction Accuracy" },
-    { number: "<2s", label: "Analysis Speed" },
-    { number: "100%", label: "Real Data Sources" },
-  ]
-
   return (
     <>
       <Head>
@@ -194,26 +187,7 @@ export default function Home() {
               </HStack>
             </MotionBox>
 
-            {/* Stats Grid */}
-            <MotionBox
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.8 }}
-              mt={8}
-            >
-              <SimpleGrid columns={{ base: 2, md: 4 }} spacing={6}>
-                {stats.map((stat, index) => (
-                  <VStack key={stat.label} spacing={1}>
-                    <Text fontSize="2xl" fontWeight="bold" color="purple.600">
-                      {stat.number}
-                    </Text>
-                    <Text fontSize="xs" color="gray.600" textAlign="center">
-                      {stat.label}
-                    </Text>
-                  </VStack>
-                ))}
-              </SimpleGrid>
-            </MotionBox>
+
           </VStack>
         </MotionContainer>
 
