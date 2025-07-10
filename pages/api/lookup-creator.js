@@ -1,4 +1,7 @@
 import { createMcpClient, executeToolCall } from '../../lib/mcp-client.js'
+import { GoogleGenerativeAI } from '@google/generative-ai'
+
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY)
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -22,60 +25,121 @@ export default async function handler(req, res) {
 
     // Clean the creator handle - remove @ symbol if present
     const cleanCreator = creator.trim().replace(/^@/, '')
-    console.log(`🔍 Looking up creator: ${cleanCreator} (cleaned from: ${creator})`)
+    console.log(`🔍 Looking up creator: ${cleanCreator} using LLM-orchestrated MCP calls`)
 
-    // Check if API key is configured
+    // Check if API keys are configured
     if (!process.env.LUNARCRUSH_API_KEY) {
-      console.error('❌ LUNARCRUSH_API_KEY not configured')
       return res.status(500).json({
         success: false,
-        error: 'LunarCrush API key not configured. Please add LUNARCRUSH_API_KEY to environment variables.',
+        error: 'LunarCrush API key not configured',
+      })
+    }
+    
+    if (!process.env.GOOGLE_GEMINI_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        error: 'Google Gemini API key not configured',
       })
     }
 
     // Create MCP client connection
     mcpClient = await createMcpClient()
     
-    // Call Creator tool with CORRECT name and parameters
-    const result = await executeToolCall(mcpClient, 'Creator', {
-      screenName: cleanCreator,  // NO @ symbol
-      network: 'x' // Default to X/Twitter
-    })
+    // Use LLM to orchestrate MCP tool calls
+    const orchestrationPrompt = `You are a social media data analyst. I need comprehensive data for creator "${cleanCreator}".
 
-    console.log('📊 MCP Creator Result:', JSON.stringify(result, null, 2))
+AVAILABLE MCP TOOLS:
+- Creator: Get creator metrics (screenName, network)
+- Topic: Get topic/keyword data (topic)
 
-    // Parse MCP response 
-    if (!result || !result.content || result.content.length === 0) {
+TASK: Create a plan to get complete social media data for "${cleanCreator}"
+
+Respond with JSON array of tool calls:
+[
+  {
+    "tool": "Creator", 
+    "args": {"screenName": "${cleanCreator}", "network": "x"},
+    "reason": "Get follower count and engagement metrics"
+  }
+]
+
+Use exact tool names and proper parameters. No explanations, just JSON array.`
+
+    console.log('🤖 Using LLM to orchestrate MCP calls...')
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
+    const orchestrationResult = await model.generateContent(orchestrationPrompt)
+    const orchestrationText = orchestrationResult.response.text()
+    
+    // Parse LLM orchestration response
+    let toolCalls
+    try {
+      const jsonMatch = orchestrationText.match(/\[[\s\S]*\]/)
+      if (!jsonMatch) {
+        throw new Error('No valid JSON array found in LLM response')
+      }
+      toolCalls = JSON.parse(jsonMatch[0])
+    } catch (parseError) {
+      console.error('❌ Failed to parse LLM orchestration:', parseError)
+      return res.status(500).json({
+        success: false,
+        error: 'LLM failed to create proper tool orchestration plan'
+      })
+    }
+
+    console.log('🎯 LLM orchestrated tool calls:', toolCalls)
+
+    // Execute the LLM-orchestrated tool calls
+    let combinedResults = []
+    for (const toolCall of toolCalls) {
+      try {
+        const result = await executeToolCall(mcpClient, toolCall.tool, toolCall.args)
+        combinedResults.push({
+          tool: toolCall.tool,
+          args: toolCall.args,
+          reason: toolCall.reason,
+          result: result
+        })
+      } catch (toolError) {
+        console.error(`❌ Tool ${toolCall.tool} failed:`, toolError)
+        // Continue with other tools
+      }
+    }
+
+    if (combinedResults.length === 0) {
       return res.status(404).json({
         success: false,
         error: `No data found for @${cleanCreator} in LunarCrush database`,
       })
     }
 
-    // Extract creator data from MCP response
-    const mcpContent = result.content[0]
+    // Parse results from LLM-orchestrated MCP calls
     let followerCount = 0
     let engagements = 0
+    
+    for (const toolResult of combinedResults) {
+      if (toolResult.result && toolResult.result.content) {
+        for (const content of toolResult.result.content) {
+          if (content.type === 'text') {
+            const text = content.text
+            console.log(`📝 ${toolResult.tool} Response:`, text)
+            
+            // Extract follower count
+            const followerMatch = text.match(/(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*followers/i) || 
+                                 text.match(/followers[:\s]*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/i) ||
+                                 text.match(/Followers:\s*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/i)
+            
+            if (followerMatch) {
+              followerCount = Math.max(followerCount, parseInt(followerMatch[1].replace(/,/g, '')))
+            }
 
-    if (mcpContent.type === 'text') {
-      const text = mcpContent.text
-      console.log('📝 MCP Response Text:', text)
-      
-      // Extract follower count using patterns that work with LunarCrush MCP
-      const followerMatch = text.match(/(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*followers/i) || 
-                           text.match(/followers[:\s]*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/i) ||
-                           text.match(/Followers:\s*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/i)
-      
-      if (followerMatch) {
-        followerCount = parseInt(followerMatch[1].replace(/,/g, ''))
-        console.log(`✅ Extracted ${followerCount.toLocaleString()} followers`)
-      }
-
-      // Extract engagements if available
-      const engagementMatch = text.match(/(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*engagements/i) ||
-                             text.match(/Engagements:\s*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/i)
-      if (engagementMatch) {
-        engagements = parseInt(engagementMatch[1].replace(/,/g, ''))
+            // Extract engagements
+            const engagementMatch = text.match(/(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*engagements/i) ||
+                                   text.match(/Engagements:\s*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/i)
+            if (engagementMatch) {
+              engagements = Math.max(engagements, parseInt(engagementMatch[1].replace(/,/g, '')))
+            }
+          }
+        }
       }
     }
 
@@ -87,7 +151,7 @@ export default async function handler(req, res) {
       })
     }
 
-    console.log(`✅ Successfully found @${cleanCreator}: ${followerCount.toLocaleString()} followers via MCP`)
+    console.log(`✅ LLM-orchestrated lookup found @${cleanCreator}: ${followerCount.toLocaleString()} followers`)
 
     // Return standardized creator data
     res.status(200).json({
@@ -97,51 +161,26 @@ export default async function handler(req, res) {
         followerCount: followerCount,
         followers: followerCount,
         engagements: engagements,
-        influenceScore: null, // May be extracted from text if available
-        engagement: null, // May be calculated if data available
+        influenceScore: null,
+        engagement: null,
         verified: false,
-        source: 'LunarCrush MCP Creator Tool'
+        source: 'LLM-Orchestrated MCP Analysis'
       },
       metadata: {
-        source: 'LunarCrush MCP',
-        toolUsed: 'Creator',
+        source: 'LunarCrush MCP via LLM Orchestration',
+        toolsUsed: toolCalls.map(t => t.tool),
         requestTime: new Date().toISOString()
       }
     })
 
   } catch (error) {
-    console.error('❌ Creator Lookup Error:', error)
-
-    // Handle specific error types with proper frontend messages
-    if (error.message.includes('timeout')) {
-      return res.status(408).json({
-        success: false,
-        error: 'Request timeout - creator lookup took too long to complete',
-      })
-    }
-
-    if (error.message.includes('API_KEY') || error.message.includes('authentication')) {
-      return res.status(401).json({
-        success: false,
-        error: 'LunarCrush API authentication failed - check API key',
-      })
-    }
-
-    if (error.message.includes('Tool Creator not found')) {
-      return res.status(500).json({
-        success: false,
-        error: 'Creator lookup tool not available on LunarCrush MCP server',
-      })
-    }
-
-    // Generic error response
+    console.error('❌ LLM-Orchestrated Creator Lookup Error:', error)
     return res.status(500).json({
       success: false,
       error: `Creator lookup failed: ${error.message}`,
     })
     
   } finally {
-    // Clean up MCP client
     if (mcpClient && mcpClient.close) {
       try {
         await mcpClient.close()
