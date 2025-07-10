@@ -1,434 +1,527 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
-  VStack,
-  HStack,
-  Heading,
-  Text,
-  Textarea,
   Button,
   Card,
   CardBody,
-  CardHeader,
-  Alert,
-  AlertIcon,
-  Progress,
+  Heading,
+  Text,
+  VStack,
+  HStack,
+  Input,
+  FormControl,
+  FormLabel,
+  FormHelperText,
+  Textarea,
+  Select,
   Badge,
+  Progress,
   Stat,
   StatLabel,
   StatNumber,
   StatHelpText,
   SimpleGrid,
   Divider,
-  useToast,
+  Alert,
+  AlertIcon,
+  Spinner,
   Tabs,
   TabList,
   TabPanels,
   Tab,
   TabPanel,
-  Icon,
-  Input,
-  FormControl,
-  FormLabel,
-  NumberInput,
-  NumberInputField,
-  Select,
+  useColorModeValue,
+  Icon
 } from '@chakra-ui/react';
-import { 
-  Sparkles, 
-  Clock, 
-  Hash, 
-  Edit3, 
-  TrendingUp, 
-  Users, 
-  Target,
-  Lightbulb 
-} from 'lucide-react';
+import { CheckCircle, TrendingUp, Users, Clock } from 'lucide-react';
 
 const ViralPredictor = () => {
-  const [postText, setPostText] = useState('');
-  const [followerCount, setFollowerCount] = useState('');
-  const [isVerified, setIsVerified] = useState('false');
+  // State management
+  const [textContent, setTextContent] = useState('🚀 Bitcoin just hit $100K! This is the moment we\'ve all been waiting for! #BTC #Crypto #ToTheMoon');
+  const [username, setUsername] = useState(''); // NEW: Twitter username
+  const [contentType, setContentType] = useState('text');
+  const [niche, setNiche] = useState('cryptocurrency');
+  const [loading, setLoading] = useState(false);
+  const [fetchingCreator, setFetchingCreator] = useState(false); // NEW: Creator fetching state
+  const [creatorData, setCreatorData] = useState(null); // NEW: Creator data from API
   const [prediction, setPrediction] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState(0);
-  const toast = useToast();
+  const [error, setError] = useState('');
 
-  const handlePredict = async () => {
-    if (!postText.trim()) {
-      toast({
-        title: 'Please enter post content',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
-      });
+  // UI Theme
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+
+  // Content type options
+  const contentTypes = [
+    { value: 'text', label: '📝 Text Tweet' },
+    { value: 'image', label: '📸 Image Post' },
+    { value: 'video', label: '🎥 Video Post' },
+    { value: 'thread', label: '🧵 Thread' },
+    { value: 'poll', label: '📊 Poll' },
+    { value: 'quote', label: '💬 Quote Tweet' },
+    { value: 'reply', label: '↩️ Reply' }
+  ];
+
+  // Niche options (same as before)
+  const niches = [
+    { value: 'cryptocurrency', label: '₿ Cryptocurrency', category: 'Finance' },
+    { value: 'technology', label: '💻 Technology', category: 'Tech' },
+    { value: 'business', label: '💼 Business', category: 'Business' },
+    { value: 'sports', label: '⚽ Sports', category: 'Entertainment' },
+    { value: 'entertainment', label: '🎬 Entertainment', category: 'Entertainment' },
+    { value: 'health', label: '💊 Health & Wellness', category: 'Lifestyle' },
+    { value: 'finance', label: '💰 Finance & Investing', category: 'Finance' },
+    { value: 'news', label: '📰 Breaking News', category: 'News' },
+    { value: 'politics', label: '🏛️ Politics', category: 'News' },
+    { value: 'education', label: '📚 Education', category: 'Education' },
+    { value: 'travel', label: '✈️ Travel', category: 'Lifestyle' },
+    { value: 'food', label: '🍔 Food & Cooking', category: 'Lifestyle' },
+    { value: 'fashion', label: '👗 Fashion & Style', category: 'Lifestyle' },
+    { value: 'gaming', label: '🎮 Gaming', category: 'Entertainment' },
+    { value: 'music', label: '🎵 Music', category: 'Entertainment' },
+    { value: 'art', label: '🎨 Art & Design', category: 'Creative' },
+    { value: 'photography', label: '📷 Photography', category: 'Creative' },
+    { value: 'science', label: '🔬 Science', category: 'Education' },
+    { value: 'ai', label: '🤖 AI & Machine Learning', category: 'Technology' },
+    { value: 'climate', label: '🌍 Climate & Environment', category: 'News' },
+    { value: 'startup', label: '🚀 Startups & Entrepreneurship', category: 'Business' },
+    { value: 'marketing', label: '📈 Marketing & Growth', category: 'Business' },
+    { value: 'personal-development', label: '🌟 Personal Development', category: 'Lifestyle' },
+    { value: 'memes', label: '😂 Memes & Humor', category: 'Entertainment' },
+    { value: 'web3', label: '🌐 Web3 & Blockchain', category: 'Emerging' },
+    { value: 'nft', label: '🖼️ NFTs & Digital Art', category: 'Emerging' },
+    { value: 'defi', label: '🏦 DeFi & Trading', category: 'Emerging' },
+    { value: 'metaverse', label: '🌐 Metaverse', category: 'Emerging' },
+    { value: 'sustainability', label: '🌱 Sustainability', category: 'Emerging' },
+    { value: 'space', label: '🚀 Space & Astronomy', category: 'Emerging' },
+    { value: 'other', label: '📋 Option Not Listed', category: 'Other' }
+  ];
+
+  // NEW: Fetch creator data automatically when username changes
+  const fetchCreatorData = async (twitterUsername) => {
+    if (!twitterUsername || twitterUsername.length < 3) {
+      setCreatorData(null);
       return;
     }
 
-    setIsLoading(true);
-    
+    setFetchingCreator(true);
     try {
-      const response = await fetch('/api/predict-viral-ai', {
+      const response = await fetch('/api/lookup-creator', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          postData: {
-            text: postText,
-            creator: {
-              follower_count: parseInt(followerCount) || 1000,
-              verified: isVerified === 'true',
-            },
-            interactions: 0,
-            created_time: new Date().toISOString(),
-          },
-          options: {
-            includeContentOptimization: true,
-            includeTimingAnalysis: true,
-            includeHashtagSuggestions: true,
-          }
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          username: twitterUsername.replace('@', ''),
+          network: 'twitter'
+        })
       });
 
       const data = await response.json();
       
-      if (data.success) {
-        setPrediction(data.prediction);
-        setActiveTab(1); // Switch to results tab
-        
-        toast({
-          title: 'Analysis complete!',
-          description: `Viral probability: ${data.prediction.viralProbability}%`,
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
+      if (data.success && data.creator) {
+        setCreatorData({
+          handle: data.creator.handle,
+          followerCount: data.creator.followerCount || 0,
+          verified: data.creator.verified || false,
+          authorityScore: data.creator.authorityScore || 0,
+          mcpSupported: data.creator.mcpSupported || false
         });
       } else {
-        throw new Error(data.error || 'Analysis failed');
+        setCreatorData(null);
       }
-    } catch (error) {
-      console.error('Prediction error:', error);
-      toast({
-        title: 'Analysis failed',
-        description: error.message || 'Please try again',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+    } catch (err) {
+      console.error('Creator fetch error:', err);
+      setCreatorData(null);
     } finally {
-      setIsLoading(false);
+      setFetchingCreator(false);
     }
   };
 
-  const getViralColor = (probability) => {
-    if (probability >= 80) return 'green';
-    if (probability >= 60) return 'blue';
-    if (probability >= 40) return 'yellow';
+  // NEW: Auto-fetch creator data when username changes (with debounce)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchCreatorData(username);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [username]);
+
+  // Enhanced viral probability analysis with real creator data
+  const analyzeViralProbability = async () => {
+    if (!textContent.trim()) {
+      setError('Please enter content to analyze');
+      return;
+    }
+
+    if (username && !creatorData) {
+      setError('Unable to fetch creator data. Please verify the username or proceed without it.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setPrediction(null);
+
+    try {
+      // Prepare post data with real creator data from LunarCrush API
+      const postData = {
+        text: textContent,
+        platform: 'twitter',
+        niche,
+        contentType,
+        username: username || null,
+        // Use real creator data if available, otherwise use defaults
+        creator: creatorData ? {
+          follower_count: creatorData.followerCount,
+          verified: creatorData.verified,
+          handle: creatorData.handle,
+          authority_score: creatorData.authorityScore
+        } : {
+          follower_count: 10000, // Default fallback
+          verified: false,
+          handle: 'anonymous'
+        },
+        created_time: new Date().toISOString(),
+        hashtags: extractHashtags(textContent),
+        mentions: extractMentions(textContent),
+        media_count: ['image', 'video'].includes(contentType) ? 1 : 0,
+      };
+
+      console.log('📊 Sending analysis request with real creator data:', postData);
+
+      const response = await fetch('/api/predict-viral-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postData }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setPrediction(data.prediction);
+      } else {
+        setError(data.error || 'Analysis failed. Please try again.');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+      console.error('Analysis error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper functions to extract hashtags and mentions
+  const extractHashtags = (text) => {
+    const hashtagRegex = /#[a-zA-Z0-9_]+/g;
+    return text.match(hashtagRegex) || [];
+  };
+
+  const extractMentions = (text) => {
+    const mentionRegex = /@[a-zA-Z0-9_]+/g;
+    return text.match(mentionRegex) || [];
+  };
+
+  // Confidence color mapping
+  const getConfidenceColor = (confidence) => {
+    if (confidence >= 80) return 'green';
+    if (confidence >= 60) return 'blue';
+    if (confidence >= 40) return 'yellow';
+    if (confidence >= 20) return 'orange';
     return 'red';
   };
 
-  const getViralCategory = (probability) => {
-    if (probability >= 80) return 'Ultra Viral';
-    if (probability >= 60) return 'High Viral';
-    if (probability >= 40) return 'Moderate Viral';
-    return 'Low Viral';
+  const getViralLabel = (confidence) => {
+    if (confidence >= 80) return '🔥 Ultra Viral';
+    if (confidence >= 60) return '📈 High Viral';
+    if (confidence >= 40) return '📊 Moderate Viral';
+    if (confidence >= 20) return '📉 Low Viral';
+    return '❌ Minimal Viral';
   };
 
   return (
-    <Box maxW="4xl" mx="auto" p={6}>
-      <VStack spacing={6}>
-        {/* Header */}
-        <VStack spacing={2} textAlign="center">
-          <HStack spacing={2}>
-            <Icon as={Sparkles} w={6} h={6} color="purple.500" />
-            <Heading size="lg" color="purple.600">
-              Twitter Viral Probability Analyzer
-            </Heading>
-          </HStack>
-          <Text color="gray.600">
-            AI-powered analysis with content optimization, timing insights, and hashtag suggestions
-          </Text>
-          <Badge colorScheme="purple" variant="subtle">
-            Enhanced with Content + Timing + Hashtag Intelligence
-          </Badge>
-        </VStack>
+    <VStack spacing={6} align="stretch" w="100%" maxW="4xl" mx="auto">
+      {/* Header */}
+      <Box textAlign="center">
+        <Heading size="lg" mb={2}>
+          ✨ Twitter Viral Probability Analyzer
+        </Heading>
+        <Text color="gray.600">
+          AI-powered analysis with content optimization, timing insights, and hashtag intelligence
+        </Text>
+        <Badge colorScheme="purple" mt={2}>
+          ENHANCED WITH CONTENT • TIMING • HASHTAG INTELLIGENCE
+        </Badge>
+      </Box>
 
-        <Tabs index={activeTab} onChange={setActiveTab} w="full" variant="enclosed">
-          <TabList>
-            <Tab>
-              <HStack spacing={2}>
-                <Icon as={Edit3} w={4} h={4} />
-                <Text>Analyze Post</Text>
-              </HStack>
-            </Tab>
-            <Tab isDisabled={!prediction}>
-              <HStack spacing={2}>
-                <Icon as={TrendingUp} w={4} h={4} />
-                <Text>Results & Optimization</Text>
-              </HStack>
-            </Tab>
-          </TabList>
+      {/* Main Input Form */}
+      <Card bg={cardBg} borderRadius="lg">
+        <CardBody>
+          <Tabs variant="enclosed">
+            <TabList>
+              <Tab>🎯 Analyze Post</Tab>
+              <Tab>📊 Results & Optimization</Tab>
+            </TabList>
 
-          <TabPanels>
-            {/* Analysis Input Tab */}
-            <TabPanel>
-              <Card>
-                <CardHeader>
+            <TabPanels>
+              {/* Analysis Tab */}
+              <TabPanel>
+                <VStack spacing={4}>
                   <Heading size="md">Post Analysis</Heading>
                   <Text fontSize="sm" color="gray.600">
                     Enter your tweet content and creator details for comprehensive viral analysis
                   </Text>
-                </CardHeader>
-                <CardBody>
-                  <VStack spacing={4}>
-                    <FormControl>
-                      <FormLabel>Tweet Content</FormLabel>
-                      <Textarea
-                        placeholder="🚀 Bitcoin just hit $100K! This is the moment we've all been waiting for! #BTC #Crypto #ToTheMoon"
-                        value={postText}
-                        onChange={(e) => setPostText(e.target.value)}
-                        minH="120px"
-                        maxLength={280}
+
+                  {/* NEW: Twitter Username Input with Auto-Fetch */}
+                  <FormControl>
+                    <FormLabel fontWeight="bold">
+                      🔍 Twitter Username (Auto-Fetch Creator Data)
+                    </FormLabel>
+                    <HStack>
+                      <Input
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="elonmusk"
+                        bg={cardBg}
+                        size="lg"
                       />
-                      <Text fontSize="xs" color="gray.500" textAlign="right">
-                        {postText.length}/280 characters
-                      </Text>
+                      {fetchingCreator && (
+                        <Spinner size="sm" color="blue.500" />
+                      )}
+                    </HStack>
+                    <FormHelperText>
+                      {username && creatorData ? (
+                        <HStack spacing={2}>
+                          <Badge colorScheme="green">✓ Data Fetched</Badge>
+                          <Text fontSize="xs">
+                            @{creatorData.handle} • {creatorData.followerCount.toLocaleString()} followers
+                            {creatorData.verified && ' • Verified'}
+                          </Text>
+                        </HStack>
+                      ) : username && !fetchingCreator ? (
+                        <Badge colorScheme="orange">⚠ Creator not found or processing...</Badge>
+                      ) : (
+                        'Enter Twitter username to auto-fetch real follower data via LunarCrush API'
+                      )}
+                    </FormHelperText>
+                  </FormControl>
+
+                  {/* Tweet Content */}
+                  <FormControl>
+                    <FormLabel fontWeight="bold">Tweet Content</FormLabel>
+                    <Textarea
+                      value={textContent}
+                      onChange={(e) => setTextContent(e.target.value)}
+                      placeholder="Enter your tweet content here..."
+                      rows={4}
+                      bg={cardBg}
+                    />
+                    <FormHelperText>
+                      {textContent.length}/280 characters • {extractHashtags(textContent).length} hashtags • {extractMentions(textContent).length} mentions
+                    </FormHelperText>
+                  </FormControl>
+
+                  {/* Content Type & Niche */}
+                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} w="100%">
+                    <FormControl>
+                      <FormLabel fontWeight="bold">Content Type</FormLabel>
+                      <Select 
+                        value={contentType}
+                        onChange={(e) => setContentType(e.target.value)}
+                        bg={cardBg}
+                      >
+                        {contentTypes.map(type => (
+                          <option key={type.value} value={type.value}>
+                            {type.label}
+                          </option>
+                        ))}
+                      </Select>
                     </FormControl>
 
-                    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} w="full">
-                      <FormControl>
-                        <FormLabel>Follower Count</FormLabel>
-                        <NumberInput min={0}>
-                          <NumberInputField
-                            placeholder="50000"
-                            value={followerCount}
-                            onChange={(e) => setFollowerCount(e.target.value)}
-                          />
-                        </NumberInput>
-                      </FormControl>
-
-                      <FormControl>
-                        <FormLabel>Verified Account</FormLabel>
-                        <Select
-                          value={isVerified}
-                          onChange={(e) => setIsVerified(e.target.value)}
-                        >
-                          <option value="false">Not Verified</option>
-                          <option value="true">Verified ✓</option>
-                        </Select>
-                      </FormControl>
-                    </SimpleGrid>
-
-                    <Button
-                      colorScheme="purple"
-                      size="lg"
-                      onClick={handlePredict}
-                      isLoading={isLoading}
-                      loadingText="Analyzing with AI..."
-                      leftIcon={<Icon as={Sparkles} />}
-                      w="full"
-                    >
-                      Analyze Viral Potential + Get Optimization Tips
-                    </Button>
-                  </VStack>
-                </CardBody>
-              </Card>
-            </TabPanel>
-
-            {/* Results Tab */}
-            <TabPanel>
-              {prediction && (
-                <VStack spacing={6}>
-                  {/* Main Viral Probability */}
-                  <Card w="full">
-                    <CardBody>
-                      <VStack spacing={4}>
-                        <HStack spacing={4} justify="center">
-                          <VStack>
-                            <Text fontSize="4xl" fontWeight="bold" color={`${getViralColor(prediction.viralProbability)}.500`}>
-                              {prediction.viralProbability}%
-                            </Text>
-                            <Badge colorScheme={getViralColor(prediction.viralProbability)} size="lg">
-                              {getViralCategory(prediction.viralProbability)}
-                            </Badge>
-                          </VStack>
-                        </HStack>
-                        
-                        <Progress
-                          value={prediction.viralProbability}
-                          colorScheme={getViralColor(prediction.viralProbability)}
-                          size="lg"
-                          w="full"
-                          borderRadius="md"
-                        />
-                      </VStack>
-                    </CardBody>
-                  </Card>
-
-                  {/* Detailed Scores */}
-                  <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4} w="full">
-                    <Stat textAlign="center" p={4} bg="blue.50" borderRadius="lg">
-                      <StatLabel>Content Score</StatLabel>
-                      <StatNumber fontSize="2xl">
-                        {prediction.contentScore || Math.floor(prediction.confidence * 0.9)}%
-                      </StatNumber>
-                      <StatHelpText>Viral Elements</StatHelpText>
-                    </Stat>
-
-                    <Stat textAlign="center" p={4} bg="green.50" borderRadius="lg">
-                      <StatLabel>Creator Authority</StatLabel>
-                      <StatNumber fontSize="2xl">
-                        {prediction.authorityScore || Math.floor(prediction.confidence * 0.85)}%
-                      </StatNumber>
-                      <StatHelpText>Influence Level</StatHelpText>
-                    </Stat>
-
-                    <Stat textAlign="center" p={4} bg="orange.50" borderRadius="lg">
-                      <StatLabel>Timing Score</StatLabel>
-                      <StatNumber fontSize="2xl">
-                        {prediction.timingScore || Math.floor(prediction.confidence * 0.8)}%
-                      </StatNumber>
-                      <StatHelpText>Optimal Timing</StatHelpText>
-                    </Stat>
-
-                    <Stat textAlign="center" p={4} bg="purple.50" borderRadius="lg">
-                      <StatLabel>Crypto Relevance</StatLabel>
-                      <StatNumber fontSize="2xl">
-                        {prediction.nicheScore || Math.floor(prediction.confidence * 0.95)}%
-                      </StatNumber>
-                      <StatHelpText>Niche Alignment</StatHelpText>
-                    </Stat>
+                    <FormControl>
+                      <FormLabel fontWeight="bold">Niche/Category</FormLabel>
+                      <Select 
+                        value={niche}
+                        onChange={(e) => setNiche(e.target.value)}
+                        bg={cardBg}
+                      >
+                        {niches.map(n => (
+                          <option key={n.value} value={n.value}>
+                            {n.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
                   </SimpleGrid>
 
-                  {/* Content Optimization */}
-                  {prediction.optimizedVersions && (
-                    <Card w="full">
-                      <CardHeader>
-                        <HStack spacing={2}>
-                          <Icon as={Edit3} color="blue.500" />
-                          <Heading size="md">Content Optimization Suggestions</Heading>
-                        </HStack>
-                      </CardHeader>
-                      <CardBody>
-                        <VStack spacing={3}>
-                          {prediction.optimizedVersions.slice(0, 2).map((version, index) => (
-                            <Box key={index} p={4} bg="blue.50" borderRadius="lg" w="full">
-                              <Text fontSize="sm" fontWeight="bold" color="blue.600" mb={2}>
-                                Optimized Version {index + 1}:
-                              </Text>
-                              <Text>{version}</Text>
-                            </Box>
-                          ))}
-                        </VStack>
-                      </CardBody>
-                    </Card>
-                  )}
-
-                  {/* Hashtag Suggestions */}
-                  <Card w="full">
-                    <CardHeader>
-                      <HStack spacing={2}>
-                        <Icon as={Hash} color="green.500" />
-                        <Heading size="md">Recommended Hashtags</Heading>
-                      </HStack>
-                    </CardHeader>
-                    <CardBody>
-                      <VStack align="start" spacing={3}>
-                        <Text fontSize="sm" color="gray.600">
-                          Trending hashtags optimized for crypto content:
-                        </Text>
-                        <HStack wrap="wrap" spacing={2}>
-                          {['#Bitcoin', '#Crypto', '#BTC', '#Blockchain', '#ToTheMoon', '#HODL', '#CryptoNews', '#DeFi'].map((tag, index) => (
-                            <Badge key={index} colorScheme="green" p={2}>
-                              {tag}
-                            </Badge>
-                          ))}
-                        </HStack>
-                        <Text fontSize="xs" color="gray.500">
-                          💡 Use 2-3 hashtags maximum for optimal engagement
-                        </Text>
-                      </VStack>
-                    </CardBody>
-                  </Card>
-
-                  {/* Timing Optimization */}
-                  <Card w="full">
-                    <CardHeader>
-                      <HStack spacing={2}>
-                        <Icon as={Clock} color="orange.500" />
-                        <Heading size="md">Optimal Timing</Heading>
-                      </HStack>
-                    </CardHeader>
-                    <CardBody>
-                      <VStack align="start" spacing={3}>
-                        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} w="full">
-                          <Box>
-                            <Text fontSize="sm" fontWeight="bold" color="orange.600" mb={2}>
-                              Best Times to Post:
-                            </Text>
-                            <VStack align="start" spacing={1}>
-                              <Text fontSize="sm">• 9:00-11:00 AM EST (Crypto morning)</Text>
-                              <Text fontSize="sm">• 7:00-9:00 PM EST (Evening engagement)</Text>
-                              <Text fontSize="sm">• Sunday 6:00-8:00 PM (Weekly peak)</Text>
-                            </VStack>
-                          </Box>
-                          <Box>
-                            <Text fontSize="sm" fontWeight="bold" color="orange.600" mb={2}>
-                              Current Timing:
-                            </Text>
-                            <Badge colorScheme="orange" p={2}>
-                              {new Date().toLocaleTimeString()} EST
-                            </Badge>
-                            <Text fontSize="xs" color="gray.500" mt={1}>
-                              Timing multiplier: 0.85x
-                            </Text>
-                          </Box>
-                        </SimpleGrid>
-                      </VStack>
-                    </CardBody>
-                  </Card>
-
-                  {/* AI Recommendations */}
-                  {prediction.recommendations && (
-                    <Card w="full">
-                      <CardHeader>
-                        <HStack spacing={2}>
-                          <Icon as={Lightbulb} color="purple.500" />
-                          <Heading size="md">AI Recommendations</Heading>
-                        </HStack>
-                      </CardHeader>
-                      <CardBody>
-                        <VStack align="start" spacing={2}>
-                          {prediction.recommendations.slice(0, 4).map((rec, index) => (
-                            <Text key={index} fontSize="sm" color="gray.700">
-                              • {rec}
-                            </Text>
-                          ))}
-                        </VStack>
-                      </CardBody>
-                    </Card>
-                  )}
-
-                  {/* Summary Alert */}
-                  <Alert status="info" borderRadius="lg">
-                    <AlertIcon />
-                    <Box>
-                      <Text fontWeight="bold">Complete Optimization Summary</Text>
-                      <Text fontSize="sm">
-                        Your post has been analyzed for viral potential, optimized for content, 
-                        enhanced with trending hashtags, and timed for maximum engagement. 
-                        Implement these suggestions for best results!
-                      </Text>
-                    </Box>
-                  </Alert>
+                  {/* Analyze Button */}
+                  <Button
+                    colorScheme="purple"
+                    size="lg"
+                    onClick={analyzeViralProbability}
+                    isLoading={loading}
+                    loadingText="Analyzing with AI..."
+                    w="100%"
+                    leftIcon={<Icon as={TrendingUp} />}
+                  >
+                    ✨ Analyze Viral Potential + Get Optimization Tips
+                  </Button>
                 </VStack>
-              )}
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
-      </VStack>
-    </Box>
+              </TabPanel>
+
+              {/* Results Tab */}
+              <TabPanel>
+                {prediction ? (
+                  <VStack spacing={6} align="stretch">
+                    {/* Main Prediction Score */}
+                    <Box textAlign="center">
+                      <Badge
+                        fontSize="lg"
+                        p={3}
+                        borderRadius="full"
+                        colorScheme={getConfidenceColor(prediction.confidence)}
+                      >
+                        {getViralLabel(prediction.confidence)}
+                      </Badge>
+                      <Heading
+                        size="2xl"
+                        mt={2}
+                        color={`${getConfidenceColor(prediction.confidence)}.500`}
+                      >
+                        {prediction.confidence}%
+                      </Heading>
+                      <Text color="gray.600" mt={2}>
+                        Estimated Viral Probability
+                      </Text>
+                      <Progress
+                        value={prediction.confidence}
+                        size="lg"
+                        colorScheme={getConfidenceColor(prediction.confidence)}
+                        mt={4}
+                        borderRadius="full"
+                      />
+                    </Box>
+
+                    <Divider />
+
+                    {/* Twitter-Specific Metrics */}
+                    <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+                      <Stat textAlign="center">
+                        <StatLabel>Twitter Optimization</StatLabel>
+                        <StatNumber fontSize="2xl">
+                          {prediction.platformFit || Math.floor(prediction.confidence * 0.9)}%
+                        </StatNumber>
+                        <StatHelpText>Platform Fit</StatHelpText>
+                      </Stat>
+
+                      <Stat textAlign="center">
+                        <StatLabel>Engagement Potential</StatLabel>
+                        <StatNumber fontSize="2xl">
+                          {prediction.expectedEngagement || Math.floor(prediction.confidence * 12)}
+                        </StatNumber>
+                        <StatHelpText>Expected Interactions</StatHelpText>
+                      </Stat>
+
+                      <Stat textAlign="center">
+                        <StatLabel>Content Score</StatLabel>
+                        <StatNumber fontSize="2xl">
+                          {prediction.contentScore || Math.floor(prediction.confidence * 0.8)}%
+                        </StatNumber>
+                        <StatHelpText>Content Quality</StatHelpText>
+                      </Stat>
+
+                      <Stat textAlign="center">
+                        <StatLabel>Creator Authority</StatLabel>
+                        <StatNumber fontSize="2xl">
+                          {creatorData ? Math.floor(creatorData.authorityScore * 100) : 'N/A'}%
+                        </StatNumber>
+                        <StatHelpText>
+                          {creatorData ? `${creatorData.followerCount.toLocaleString()} followers` : 'Not Available'}
+                        </StatHelpText>
+                      </Stat>
+                    </SimpleGrid>
+
+                    {/* AI Optimization Suggestions */}
+                    {prediction.optimizedVersions && prediction.optimizedVersions.length > 0 && (
+                      <Box>
+                        <Heading size="md" mb={4}>🚀 AI-Optimized Versions</Heading>
+                        <VStack spacing={3}>
+                          {prediction.optimizedVersions.slice(0, 3).map((version, index) => (
+                            <Alert key={index} status="info" borderRadius="lg">
+                              <AlertIcon />
+                              <VStack align="start" spacing={1} flex={1}>
+                                <Text fontWeight="bold">Version {index + 1}:</Text>
+                                <Text fontSize="sm">{version}</Text>
+                              </VStack>
+                            </Alert>
+                          ))}
+                        </VStack>
+                      </Box>
+                    )}
+
+                    {/* Key Insights */}
+                    {prediction.insights && (
+                      <Box>
+                        <Heading size="md" mb={4}>💡 Key Insights</Heading>
+                        <VStack spacing={2} align="start">
+                          {prediction.insights.map((insight, index) => (
+                            <HStack key={index} align="start">
+                              <Icon as={CheckCircle} color="green.500" mt={1} />
+                              <Text fontSize="sm">{insight}</Text>
+                            </HStack>
+                          ))}
+                        </VStack>
+                      </Box>
+                    )}
+                  </VStack>
+                ) : (
+                  <Box textAlign="center" py={8}>
+                    <Text color="gray.500">
+                      Click "Analyze Viral Potential" to see your results and optimization tips
+                    </Text>
+                  </Box>
+                )}
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+        </CardBody>
+      </Card>
+
+      {/* Error Display */}
+      {error && (
+        <Alert status="error" borderRadius="lg">
+          <AlertIcon />
+          <Text>{error}</Text>
+        </Alert>
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <Card bg={cardBg} borderRadius="lg" borderWidth="2px" borderColor="purple.200">
+          <CardBody>
+            <VStack spacing={4}>
+              <Spinner size="lg" color="purple.500" />
+              <VStack spacing={2}>
+                <Text fontWeight="bold" color="purple.600">
+                  🤖 AI Analysis in Progress
+                </Text>
+                <Text fontSize="sm" color="gray.600" textAlign="center">
+                  • Processing content with Gemini AI
+                  <br />
+                  • Analyzing viral potential with ML algorithms
+                  <br />
+                  • Generating optimization recommendations
+                  {creatorData && (
+                    <>
+                      <br />
+                      • Using real creator data: @{creatorData.handle} ({creatorData.followerCount.toLocaleString()} followers)
+                    </>
+                  )}
+                </Text>
+              </VStack>
+            </VStack>
+          </CardBody>
+        </Card>
+      )}
+    </VStack>
   );
 };
 

@@ -1,321 +1,273 @@
-/**
- * Debug Version - Twitter Viral Probability Analysis API
- * Logs everything to identify exact edge case failure patterns
- */
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// Initialize Gemini AI
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY);
 
 export default async function handler(req, res) {
-  // Debug logging
-  console.log('🔍 API Called with:', {
-    method: req.method,
-    hasBody: !!req.body,
-    bodyType: typeof req.body,
-    bodyKeys: req.body ? Object.keys(req.body) : 'no body',
-    body: req.body
-  });
-
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
   if (req.method !== 'POST') {
-    return createSuccessResponse(res, 'Method not allowed', null);
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // UNIVERSAL SUCCESS RESPONSE STRATEGY
-    // Instead of returning errors, we'll return success with minimal analysis
-    // This should satisfy all edge case tests
+    const { postData } = req.body;
 
-    let text = '';
-    let platform = 'twitter';
-    let niche = 'crypto';
-    let contentType = 'text';
-
-    // Extract data with maximum flexibility
-    if (req.body) {
-      // Try postData format first
-      if (req.body.postData) {
-        const postData = req.body.postData;
-        text = extractText(postData);
-        platform = postData.platform || 'twitter';
-        niche = postData.niche || 'crypto';
-        contentType = postData.contentType || 'text';
-      } else {
-        // Try direct format
-        text = extractText(req.body);
-        platform = req.body.platform || 'twitter';
-        niche = req.body.niche || 'crypto';
-        contentType = req.body.contentType || 'text';
-      }
+    if (!postData || !postData.text) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Post content is required' 
+      });
     }
 
-    console.log('🔍 Extracted data:', { text, platform, niche, contentType });
-
-    // Generate analysis for ANY input (including empty/missing text)
-    const analysis = generateUniversalAnalysis(text, niche, contentType);
-
-    console.log('🔍 Generated analysis:', analysis);
-
-    // Create GUARANTEED complete response
-    const prediction = createGuaranteedResponse(analysis);
-
-    console.log('🔍 Final prediction:', prediction);
-
-    // FINAL STRUCTURE VALIDATION
-    validateResponse(prediction);
-
-    const response = {
-      success: true,
-      prediction,
-      metadata: {
-        platform: platform || 'twitter',
-        analysisMode: 'universal_debug',
-        timestamp: new Date().toISOString(),
-        niche: niche || 'crypto',
-        contentType: contentType || 'text',
-        hasLunarCrushMCP: true,
-        hasGeminiAI: true,
-        textLength: text ? text.length : 0,
-        processingTime: Date.now()
-      }
-    };
-
-    console.log('🔍 Final response structure:', Object.keys(response.prediction));
-
-    return res.status(200).json(response);
-
-  } catch (error) {
-    console.error('🔍 API Error:', error);
-
-    // Even catch blocks return success with minimal response
-    const fallbackPrediction = createGuaranteedResponse({});
-    validateResponse(fallbackPrediction);
-
-    return res.status(200).json({
-      success: true,
-      prediction: fallbackPrediction,
-      metadata: {
-        platform: 'twitter',
-        analysisMode: 'error_fallback',
-        timestamp: new Date().toISOString(),
-        error: error.message
-      }
+    console.log('🎯 Enhanced Viral Analysis Request:', {
+      text: postData.text.substring(0, 100) + '...',
+      creator: postData.creator,
+      platform: postData.platform,
+      niche: postData.niche,
+      contentType: postData.contentType
     });
-  }
+
+    // Enhanced prompt for better viral prediction with real creator data
+    const enhancedPrompt = `
+You are an expert social media analyst specializing in viral content prediction. Analyze this ${postData.platform || 'Twitter'} post for viral potential.
+
+POST CONTENT: "${postData.text}"
+
+CREATOR DATA (from LunarCrush API):
+- Handle: @${postData.creator?.handle || 'anonymous'}
+- Followers: ${postData.creator?.follower_count?.toLocaleString() || 'Unknown'}
+- Verified: ${postData.creator?.verified ? 'Yes' : 'No'}
+- Authority Score: ${postData.creator?.authority_score || 'Not available'}
+
+CONTEXT:
+- Platform: ${postData.platform || 'Twitter'}
+- Content Type: ${postData.contentType || 'text'}
+- Niche: ${postData.niche || 'general'}
+- Hashtags: ${postData.hashtags?.join(', ') || 'None detected'}
+- Mentions: ${postData.mentions?.join(', ') || 'None detected'}
+- Media: ${postData.media_count > 0 ? 'Yes' : 'No'}
+
+ANALYSIS REQUIREMENTS:
+1. Viral Probability (0-100): Based on content, creator authority, timing, and engagement patterns
+2. Platform Optimization: How well this content fits Twitter's algorithm and user behavior
+3. Creator Authority Impact: How the creator's real follower count and verification affects viral potential
+4. Content Optimization: 3 specific ways to improve viral potential
+5. Timing Insights: Best posting times for maximum reach
+6. Hashtag Strategy: Trending hashtags that could boost visibility
+7. Engagement Predictions: Expected likes, retweets, comments based on creator data
+
+RESPONSE FORMAT (JSON):
+{
+  "confidence": [0-100 number],
+  "platformFit": [0-100 number],
+  "contentScore": [0-100 number], 
+  "creatorAuthorityImpact": [0-100 number],
+  "expectedEngagement": [estimated total interactions],
+  "optimizedVersions": [
+    "Version 1: [optimized tweet]",
+    "Version 2: [optimized tweet]", 
+    "Version 3: [optimized tweet]"
+  ],
+  "hashtagRecommendations": [
+    "#trending1", "#trending2", "#trending3"
+  ],
+  "timingInsights": [
+    "insight 1", "insight 2", "insight 3"
+  ],
+  "insights": [
+    "key insight 1", "key insight 2", "key insight 3"
+  ],
+  "improvementSuggestions": [
+    "specific improvement 1",
+    "specific improvement 2", 
+    "specific improvement 3"
+  ]
 }
 
-/**
- * Extract text from any possible location
- */
-function extractText(data) {
-  if (!data) return '';
+Focus on actionable, data-driven recommendations. Use the real creator data to provide accurate engagement predictions.
+`;
 
-  // Try multiple field names
-  const textFields = ['text', 'content', 'message', 'body', 'post', 'tweet'];
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-thinking-exp' });
+    const result = await model.generateContent(enhancedPrompt);
+    const response = result.response;
+    const text = response.text();
 
-  for (const field of textFields) {
-    if (data[field] !== undefined && data[field] !== null) {
-      return String(data[field]);
+    console.log('🤖 Raw Gemini Response:', text.substring(0, 200) + '...');
+
+    // Parse AI response
+    let aiAnalysis;
+    try {
+      // Extract JSON from response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        aiAnalysis = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('No JSON found in response');
+      }
+    } catch (parseError) {
+      console.error('❌ JSON Parse Error:', parseError);
+      // Fallback analysis with real creator data
+      aiAnalysis = generateFallbackAnalysis(postData);
     }
-  }
 
-  // If no text found, return empty string (we'll handle this gracefully)
-  return '';
-}
+    // Enhance analysis with creator authority scoring
+    const enhancedAnalysis = enhanceWithCreatorData(aiAnalysis, postData.creator);
 
-/**
- * Generate analysis for ANY input, including empty text
- */
-function generateUniversalAnalysis(text, niche, contentType) {
-  const safeText = text || '';
-  const textLength = safeText.length;
-
-  // Base scoring that works for any input
-  let score = 30; // Safe baseline
-
-  if (textLength === 0) {
-    // Empty text case
-    score = 15;
-  } else if (textLength === 1) {
-    // Single character case
-    const isEmoji = /[\u{1F300}-\u{1F9FF}]/u.test(safeText);
-    score = isEmoji ? 25 : 20;
-  } else {
-    // Normal analysis
-    const factors = {
-      hasEmojis: /[\u{1F300}-\u{1F9FF}]/u.test(safeText),
-      hasHashtags: safeText.includes('#'),
-      hasCrypto: /bitcoin|btc|ethereum|eth|crypto/i.test(safeText),
-      hasNumbers: /\d+/.test(safeText),
-      hasQuestion: safeText.includes('?')
-    };
-
-    // Add bonuses
-    if (factors.hasEmojis) score += 10;
-    if (factors.hasHashtags) score += 15;
-    if (factors.hasCrypto) score += 20;
-    if (factors.hasNumbers) score += 8;
-    if (factors.hasQuestion) score += 5;
-
-    // Length bonus
-    if (textLength > 10 && textLength < 200) score += 15;
-  }
-
-  // Content type bonus
-  const typeBonus = {
-    'image': 10, 'video': 15, 'thread': 12, 'poll': 8
-  };
-  score += typeBonus[contentType] || 0;
-
-  // Niche bonus
-  const nicheBonus = {
-    'crypto': 10, 'bitcoin': 12, 'ethereum': 10
-  };
-  score += nicheBonus[niche] || 0;
-
-  // Cap the score
-  score = Math.max(5, Math.min(90, score));
-
-  return {
-    viralProbability: score,
-    confidence: score,
-    category: getCategory(score),
-    expectedEngagement: Math.max(10, score * 10),
-    platformFit: Math.max(40, score - 5),
-    timingScore: Math.max(35, score - 10),
-    nicheScore: Math.max(30, score - 15),
-    contentScore: Math.max(25, score - 20),
-    recommendations: getRecommendations(safeText, score),
-    analysis: `Universal analysis: ${score}% probability for ${contentType} content`,
-    textLength: textLength
-  };
-}
-
-/**
- * Create GUARANTEED complete response with all required fields
- */
-function createGuaranteedResponse(analysis) {
-  // Start with absolute defaults
-  const guaranteed = {
-    viralProbability: 25,
-    confidence: 25,
-    category: 'Low Probability',
-    expectedEngagement: 50,
-    platformFit: 60,
-    timingScore: 55,
-    nicheScore: 50,
-    contentScore: 45,
-    recommendations: ['Optimize content for better engagement'],
-    analysis: 'Analysis completed'
-  };
-
-  // Override with analysis data if it exists and is valid
-  if (analysis && typeof analysis === 'object') {
-    Object.keys(guaranteed).forEach(key => {
-      const value = analysis[key];
-      if (value !== undefined && value !== null) {
-        if (typeof guaranteed[key] === 'number') {
-          // Validate numbers
-          const numValue = Number(value);
-          if (!isNaN(numValue) && isFinite(numValue)) {
-            guaranteed[key] = Math.max(0, Math.min(100, numValue));
-          }
-        } else if (typeof guaranteed[key] === 'string') {
-          // Validate strings
-          if (typeof value === 'string' && value.length > 0) {
-            guaranteed[key] = value;
-          }
-        } else if (Array.isArray(guaranteed[key])) {
-          // Validate arrays
-          if (Array.isArray(value) && value.length > 0) {
-            guaranteed[key] = value;
-          }
+    // Final response structure
+    const finalResponse = {
+      success: true,
+      prediction: {
+        confidence: Math.min(Math.max(enhancedAnalysis.confidence || 50, 0), 100),
+        platformFit: enhancedAnalysis.platformFit || 85,
+        contentScore: enhancedAnalysis.contentScore || 75,
+        creatorAuthorityImpact: enhancedAnalysis.creatorAuthorityImpact || 60,
+        expectedEngagement: enhancedAnalysis.expectedEngagement || calculateExpectedEngagement(postData.creator),
+        optimizedVersions: enhancedAnalysis.optimizedVersions || [
+          "Enhanced version with better hooks and timing",
+          "Optimized version with trending hashtags",
+          "Improved version with stronger call-to-action"
+        ],
+        hashtagRecommendations: enhancedAnalysis.hashtagRecommendations || ['#trending', '#viral', '#social'],
+        timingInsights: enhancedAnalysis.timingInsights || [
+          "Post during peak hours (9-11 AM EST)",
+          "Tuesday-Thursday shows highest engagement",
+          "Include visuals for 150% better performance"
+        ],
+        insights: enhancedAnalysis.insights || [
+          "Content shows strong emotional appeal",
+          "Creator authority is in optimal viral range",
+          "Hashtag strategy needs optimization"
+        ],
+        improvementSuggestions: enhancedAnalysis.improvementSuggestions || [
+          "Add trending hashtags for better discoverability",
+          "Include a clear call-to-action",
+          "Optimize posting time for your audience"
+        ]
+      },
+      metadata: {
+        aiModel: 'gemini-2.0-flash-thinking-exp',
+        creatorDataSource: postData.creator?.handle ? 'LunarCrush API' : 'fallback',
+        analysisTimestamp: new Date().toISOString(),
+        enhancedFeatures: {
+          realCreatorData: !!postData.creator?.handle,
+          aiOptimization: true,
+          hashtagIntelligence: true,
+          timingAnalysis: true
         }
       }
+    };
+
+    console.log('✅ Enhanced Analysis Complete:', {
+      confidence: finalResponse.prediction.confidence,
+      creatorData: !!postData.creator?.handle,
+      expectedEngagement: finalResponse.prediction.expectedEngagement
+    });
+
+    res.status(200).json(finalResponse);
+
+  } catch (error) {
+    console.error('❌ Enhanced Analysis Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Analysis failed. Please try again.',
+      details: error.message 
     });
   }
-
-  return guaranteed;
 }
 
-/**
- * Validate response has all required fields with correct types
- */
-function validateResponse(prediction) {
-  const requiredFields = [
-    'viralProbability', 'confidence', 'category', 'expectedEngagement',
-    'platformFit', 'timingScore', 'nicheScore', 'contentScore',
-    'recommendations', 'analysis'
-  ];
-
-  for (const field of requiredFields) {
-    if (prediction[field] === undefined || prediction[field] === null) {
-      throw new Error(`Validation failed: ${field} is ${prediction[field]}`);
-    }
-
-    // Type checking
-    if (['viralProbability', 'confidence'].includes(field)) {
-      if (typeof prediction[field] !== 'number' || isNaN(prediction[field])) {
-        throw new Error(`Validation failed: ${field} must be a valid number`);
-      }
-    }
+// Helper function to enhance analysis with real creator data
+function enhanceWithCreatorData(analysis, creator) {
+  if (!creator || !creator.follower_count) {
+    return analysis;
   }
 
-  console.log('✅ Response validation passed');
+  const followerCount = creator.follower_count;
+  const isVerified = creator.verified;
+
+  // Calculate creator authority impact based on real data
+  let authorityMultiplier = 1.0;
+  
+  // Follower count impact (sweet spot: 50K-500K)
+  if (followerCount >= 50000 && followerCount <= 500000) {
+    authorityMultiplier += 0.3; // 30% boost for optimal range
+  } else if (followerCount >= 10000) {
+    authorityMultiplier += 0.2; // 20% boost for established creators
+  } else if (followerCount >= 1000) {
+    authorityMultiplier += 0.1; // 10% boost for growing creators
+  }
+
+  // Verification boost
+  if (isVerified) {
+    authorityMultiplier += 0.15; // 15% boost for verified accounts
+  }
+
+  // Apply multiplier to confidence
+  const enhancedConfidence = Math.min(
+    Math.floor((analysis.confidence || 50) * authorityMultiplier), 
+    100
+  );
+
+  return {
+    ...analysis,
+    confidence: enhancedConfidence,
+    creatorAuthorityImpact: Math.floor(authorityMultiplier * 100 - 100),
+    expectedEngagement: calculateExpectedEngagement(creator)
+  };
 }
 
-/**
- * Create guaranteed success response for any scenario
- */
-function createSuccessResponse(res, message, data) {
-  const prediction = createGuaranteedResponse(data || {});
-  validateResponse(prediction);
+// Calculate realistic engagement based on creator data
+function calculateExpectedEngagement(creator) {
+  if (!creator || !creator.follower_count) {
+    return 50; // Default fallback
+  }
 
-  return res.status(200).json({
-    success: true,
-    prediction,
-    metadata: {
-      platform: 'twitter',
-      analysisMode: 'universal',
-      timestamp: new Date().toISOString(),
-      message
-    }
-  });
-}
+  const followerCount = creator.follower_count;
+  let engagementRate = 0.03; // Base 3% engagement rate
 
-/**
- * Get category from score
- */
-function getCategory(score) {
-  if (score >= 80) return 'High Probability';
-  if (score >= 65) return 'Moderate-High Probability';
-  if (score >= 50) return 'Moderate Probability';
-  if (score >= 35) return 'Low-Moderate Probability';
-  return 'Low Probability';
-}
-
-/**
- * Get recommendations based on text and score
- */
-function getRecommendations(text, score) {
-  const recs = [];
-
-  if (!text || text.length === 0) {
-    recs.push('Add meaningful content to improve engagement');
+  // Adjust engagement rate based on follower count
+  if (followerCount < 1000) {
+    engagementRate = 0.08; // Higher rate for smaller accounts
+  } else if (followerCount < 10000) {
+    engagementRate = 0.06;
+  } else if (followerCount < 100000) {
+    engagementRate = 0.04;
   } else {
-    if (!text.includes('#')) recs.push('Add relevant hashtags');
-    if (!/[\u{1F300}-\u{1F9FF}]/u.test(text)) recs.push('Include emojis for better engagement');
-    if (text.length > 200) recs.push('Consider shortening the content');
+    engagementRate = 0.02; // Lower rate for mega accounts
   }
 
-  if (recs.length === 0) {
-    recs.push('Content is optimized for Twitter');
+  // Verification boost
+  if (creator.verified) {
+    engagementRate *= 1.5;
   }
 
-  return recs.slice(0, 3);
+  return Math.floor(followerCount * engagementRate);
+}
+
+// Fallback analysis when AI parsing fails
+function generateFallbackAnalysis(postData) {
+  const hasHashtags = postData.hashtags && postData.hashtags.length > 0;
+  const hasMedia = postData.media_count > 0;
+  const textLength = postData.text.length;
+  
+  let baseConfidence = 40;
+  
+  // Content-based scoring
+  if (hasHashtags) baseConfidence += 15;
+  if (hasMedia) baseConfidence += 20;
+  if (textLength > 50 && textLength < 200) baseConfidence += 10;
+  
+  // Niche boost
+  if (['cryptocurrency', 'technology', 'ai'].includes(postData.niche)) {
+    baseConfidence += 10;
+  }
+
+  return {
+    confidence: Math.min(baseConfidence, 90),
+    platformFit: 80,
+    contentScore: 70,
+    optimizedVersions: [
+      `${postData.text} 🚀 #trending`,
+      `🔥 ${postData.text}`,
+      `${postData.text} What do you think? 💭`
+    ]
+  };
 }
