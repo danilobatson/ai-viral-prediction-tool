@@ -23,38 +23,43 @@ export default async function handler(req, res) {
 		}
 
 		// Strict API key validation
-		const geminiKey = process.env.GOOGLE_AI_API_KEY;
+		const geminiKey = process.env.GEMINI_API_KEY;
 		if (!geminiKey || geminiKey.includes('your_')) {
 			return res.status(400).json({
 				success: false,
-				error: 'Google AI API key not configured. Please configure GOOGLE_AI_API_KEY environment variable.',
+				error:
+					'Google AI API key not configured. Please configure GEMINI_API_KEY environment variable.',
 				requiresSetup: true,
 			});
 		}
 
 		console.log('🤖 Starting OPTIMIZED AI viral prediction analysis...');
 		console.log('📝 Content length:', content.length);
-		console.log('👤 Creator followers:', creatorData?.followers?.toLocaleString() || 'Unknown');
+		console.log(
+			'👤 Creator followers:',
+			creatorData?.followers?.toLocaleString() || 'Unknown'
+		);
 
 		// Validate we have real creator data
 		if (!creatorData || !creatorData.followers) {
 			return res.status(400).json({
 				success: false,
-				error: 'Creator data with follower count is required for viral prediction.',
+				error:
+					'Creator data with follower count is required for viral prediction.',
 				hint: 'Use the creator lookup API first to get real social data.',
 			});
 		}
 
 		// Initialize Gemini with enhanced configuration
 		const genAI = new GoogleGenerativeAI(geminiKey);
-		const model = genAI.getGenerativeModel({ 
+		const model = genAI.getGenerativeModel({
 			model: 'gemini-2.0-flash-lite',
 			generationConfig: {
 				temperature: 0.3, // Slightly creative but focused
 				topP: 0.9,
 				topK: 40,
 				maxOutputTokens: 800, // Enough for detailed analysis
-			}
+			},
 		});
 
 		// Build optimized prompt with enhanced context
@@ -62,12 +67,16 @@ export default async function handler(req, res) {
 
 		// Execute AI analysis with timeout
 		const timeoutPromise = new Promise((_, reject) => {
-			setTimeout(() => reject(new Error('AI analysis timeout after 30 seconds')), 30000);
+			setTimeout(
+				() => reject(new Error('AI analysis timeout after 30 seconds')),
+				30000
+			);
 		});
 
-		const analysisPromise = model.generateContent(prompt)
-			.then(result => result.response)
-			.then(response => response.text());
+		const analysisPromise = model
+			.generateContent(prompt)
+			.then((result) => result.response)
+			.then((response) => response.text());
 
 		const aiResponse = await Promise.race([analysisPromise, timeoutPromise]);
 
@@ -81,37 +90,41 @@ export default async function handler(req, res) {
 			if (!jsonMatch) {
 				throw new Error('No JSON found in AI response');
 			}
-			
+
 			const jsonString = jsonMatch[0]
 				.replace(/```json\n?/g, '')
 				.replace(/```\n?/g, '')
 				.trim();
-			
+
 			analysisData = JSON.parse(jsonString);
-			
+
 			// Enhanced validation with detailed field checking
-			const requiredFields = ['confidence', 'viralFactors', 'expectedEngagement', 'keyInsights'];
+			const requiredFields = [
+				'confidence',
+				'viralFactors',
+				'expectedEngagement',
+				'keyInsights',
+			];
 			for (const field of requiredFields) {
 				if (analysisData[field] === undefined || analysisData[field] === null) {
 					throw new Error(`Missing required field: ${field}`);
 				}
 			}
-			
+
 			// Validate viralFactors sub-object
 			if (typeof analysisData.viralFactors !== 'object') {
 				throw new Error('viralFactors must be an object');
 			}
-			
 		} catch (parseError) {
 			console.error('❌ JSON Parsing Error:', parseError.message);
 			console.error('Raw AI Response:', aiResponse.substring(0, 500));
-			
+
 			return res.status(500).json({
 				success: false,
 				error: 'AI response parsing failed',
 				message: 'Unable to parse AI analysis results',
 				details: parseError.message,
-				rawResponse: aiResponse.substring(0, 200) + '...'
+				rawResponse: aiResponse.substring(0, 200) + '...',
 			});
 		}
 
@@ -121,7 +134,7 @@ export default async function handler(req, res) {
 		console.log('✅ Analysis complete:', {
 			confidence: finalAnalysis.confidence,
 			viralProbability: finalAnalysis.viralProbability,
-			expectedEngagement: finalAnalysis.expectedEngagement
+			expectedEngagement: finalAnalysis.expectedEngagement,
 		});
 
 		res.status(200).json({
@@ -130,34 +143,36 @@ export default async function handler(req, res) {
 			metadata: {
 				creatorTier: getCreatorTier(creatorData.followers),
 				processingTime: new Date().toISOString(),
-				modelUsed: 'gemini-2.0-flash-lite'
-			}
+				modelUsed: 'gemini-2.0-flash-lite',
+			},
 		});
-
 	} catch (error) {
 		console.error('❌ API Error:', error);
-		
+
 		if (error.message.includes('timeout')) {
 			return res.status(408).json({
 				success: false,
 				error: 'Request timeout',
-				message: 'AI analysis took too long to complete'
+				message: 'AI analysis took too long to complete',
 			});
 		}
-		
-		if (error.message.includes('API_KEY') || error.message.includes('invalid')) {
+
+		if (
+			error.message.includes('API_KEY') ||
+			error.message.includes('invalid')
+		) {
 			return res.status(401).json({
 				success: false,
 				error: 'Authentication failed',
-				message: 'Invalid Google AI API key'
+				message: 'Invalid Google AI API key',
 			});
 		}
-		
+
 		return res.status(500).json({
 			success: false,
 			error: 'Analysis failed',
 			message: error.message || 'Unknown error occurred',
-			details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+			details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
 		});
 	}
 }
@@ -166,29 +181,29 @@ function buildOptimizedPrompt(content, creatorData) {
 	const followers = creatorData?.followers || 0;
 	const engagement = creatorData?.engagements || 0;
 	const platform = creatorData?.platform || 'social media';
-	
+
 	// Enhanced follower tier analysis
 	let followerTier, expectedRange, reachMultiplier;
 	if (followers >= 10000000) {
-		followerTier = "Mega Creator (10M+)";
-		expectedRange = "80-95%";
-		reachMultiplier = "5-20x";
+		followerTier = 'Mega Creator (10M+)';
+		expectedRange = '80-95%';
+		reachMultiplier = '5-20x';
 	} else if (followers >= 1000000) {
-		followerTier = "Large Creator (1M+)";
-		expectedRange = "65-85%";
-		reachMultiplier = "3-15x";
+		followerTier = 'Large Creator (1M+)';
+		expectedRange = '65-85%';
+		reachMultiplier = '3-15x';
 	} else if (followers >= 100000) {
-		followerTier = "Medium Creator (100K+)";
-		expectedRange = "50-75%";
-		reachMultiplier = "2-10x";
+		followerTier = 'Medium Creator (100K+)';
+		expectedRange = '50-75%';
+		reachMultiplier = '2-10x';
 	} else if (followers >= 10000) {
-		followerTier = "Small Creator (10K+)";
-		expectedRange = "35-60%";
-		reachMultiplier = "1.5-5x";
+		followerTier = 'Small Creator (10K+)';
+		expectedRange = '35-60%';
+		reachMultiplier = '1.5-5x';
 	} else {
-		followerTier = "Micro Creator (<10K)";
-		expectedRange = "20-45%";
-		reachMultiplier = "1-3x";
+		followerTier = 'Micro Creator (<10K)';
+		expectedRange = '20-45%';
+		reachMultiplier = '1-3x';
 	}
 
 	return `You are an expert social media analyst with deep knowledge of viral content mechanics across all platforms.
@@ -229,7 +244,7 @@ REQUIRED JSON OUTPUT:
   "viralProbability": "<low/medium/high>",
   "keyInsights": [
     "Primary viral strength",
-    "Main limitation", 
+    "Main limitation",
     "Specific optimization tip"
   ],
   "hashtags": ["#strategic", "#trending", "#hashtags"],
@@ -251,50 +266,80 @@ STRICT REQUIREMENTS:
 
 function applyEnhancedConstraints(data, creatorData) {
 	const followers = creatorData?.followers || 0;
-	
+
 	// Enhanced confidence constraints
 	let maxConfidence, minConfidence;
 	if (followers >= 10000000) {
-		maxConfidence = 95; minConfidence = 80;
+		maxConfidence = 95;
+		minConfidence = 80;
 	} else if (followers >= 1000000) {
-		maxConfidence = 85; minConfidence = 65;
+		maxConfidence = 85;
+		minConfidence = 65;
 	} else if (followers >= 100000) {
-		maxConfidence = 75; minConfidence = 50;
+		maxConfidence = 75;
+		minConfidence = 50;
 	} else if (followers >= 10000) {
-		maxConfidence = 60; minConfidence = 35;
+		maxConfidence = 60;
+		minConfidence = 35;
 	} else {
-		maxConfidence = 45; minConfidence = 20;
+		maxConfidence = 45;
+		minConfidence = 20;
 	}
 
 	// Constrain confidence to realistic range
-	const confidence = Math.max(minConfidence, Math.min(maxConfidence, data.confidence || 50));
-	
+	const confidence = Math.max(
+		minConfidence,
+		Math.min(maxConfidence, data.confidence || 50)
+	);
+
 	// Validate expected engagement is realistic (1-5% of followers typically)
 	const minEngagement = Math.floor(followers * 0.01);
 	const maxEngagement = Math.floor(followers * 0.05);
-	const expectedEngagement = Math.max(minEngagement, 
-		Math.min(maxEngagement, data.expectedEngagement || minEngagement));
+	const expectedEngagement = Math.max(
+		minEngagement,
+		Math.min(maxEngagement, data.expectedEngagement || minEngagement)
+	);
 
 	return {
 		...data,
 		confidence: Math.round(confidence),
 		expectedEngagement,
 		// Ensure viral factors are within bounds
-		viralFactors: data.viralFactors ? {
-			emotionalImpact: Math.max(0, Math.min(100, data.viralFactors.emotionalImpact || 0)),
-			shareability: Math.max(0, Math.min(100, data.viralFactors.shareability || 0)),
-			trendAlignment: Math.max(0, Math.min(100, data.viralFactors.trendAlignment || 0)),
-			creatorAuthority: Math.max(0, Math.min(100, data.viralFactors.creatorAuthority || 0)),
-			contentQuality: Math.max(0, Math.min(100, data.viralFactors.contentQuality || 0)),
-			algorithmCompatibility: Math.max(0, Math.min(100, data.viralFactors.algorithmCompatibility || 0))
-		} : {}
+		viralFactors: data.viralFactors
+			? {
+					emotionalImpact: Math.max(
+						0,
+						Math.min(100, data.viralFactors.emotionalImpact || 0)
+					),
+					shareability: Math.max(
+						0,
+						Math.min(100, data.viralFactors.shareability || 0)
+					),
+					trendAlignment: Math.max(
+						0,
+						Math.min(100, data.viralFactors.trendAlignment || 0)
+					),
+					creatorAuthority: Math.max(
+						0,
+						Math.min(100, data.viralFactors.creatorAuthority || 0)
+					),
+					contentQuality: Math.max(
+						0,
+						Math.min(100, data.viralFactors.contentQuality || 0)
+					),
+					algorithmCompatibility: Math.max(
+						0,
+						Math.min(100, data.viralFactors.algorithmCompatibility || 0)
+					),
+			  }
+			: {},
 	};
 }
 
 function getCreatorTier(followers) {
-	if (followers >= 10000000) return "mega";
-	if (followers >= 1000000) return "large";
-	if (followers >= 100000) return "medium";
-	if (followers >= 10000) return "small";
-	return "micro";
+	if (followers >= 10000000) return 'mega';
+	if (followers >= 1000000) return 'large';
+	if (followers >= 100000) return 'medium';
+	if (followers >= 10000) return 'small';
+	return 'micro';
 }
