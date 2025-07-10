@@ -1,11 +1,11 @@
 {
-  "timestamp": "2025-07-05T06:42:29.978Z",
+  "timestamp": "2025-07-10T05:56:32.175Z",
   "summary": {
-    "passed": 9,
+    "passed": 6,
     "warnings": 2,
-    "failed": 0,
+    "failed": 3,
     "total": 11,
-    "status": "READY"
+    "status": "NEEDS FIXES"
   },
   "tests": [
     {
@@ -20,8 +20,8 @@
     },
     {
       "name": "All components exist",
-      "status": "PASS",
-      "message": "OK"
+      "status": "FAIL",
+      "message": "Missing components: components/PredictionHistory/index.js"
     },
     {
       "name": "Environment variables configured",
@@ -30,8 +30,8 @@
     },
     {
       "name": "Required dependencies installed",
-      "status": "PASS",
-      "message": "OK"
+      "status": "FAIL",
+      "message": "Missing dependencies: recharts"
     },
     {
       "name": "Dependencies installed (node_modules)",
@@ -50,8 +50,8 @@
     },
     {
       "name": "Component imports valid",
-      "status": "PASS",
-      "message": "OK"
+      "status": "FAIL",
+      "message": "Missing imports in index.js: PredictionHistory, HashtagOptimizer, TimingOptimizer, ContentOptimizer"
     },
     {
       "name": "Component syntax validation",
