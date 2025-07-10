@@ -1,528 +1,391 @@
-import { useState, useEffect } from 'react';
 import {
-  Box,
-  Button,
-  Card,
-  CardBody,
-  Heading,
-  Text,
   VStack,
   HStack,
-  Input,
-  FormControl,
-  FormLabel,
-  FormHelperText,
+  Text,
   Textarea,
-  Select,
-  Badge,
-  Progress,
+  Button,
+  Box,
+  Alert,
+  AlertIcon,
+  AlertDescription,
+  SimpleGrid,
   Stat,
   StatLabel,
   StatNumber,
   StatHelpText,
-  SimpleGrid,
-  Divider,
-  Alert,
-  AlertIcon,
-  Spinner,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
-  useColorModeValue,
-  Icon
-} from '@chakra-ui/react';
-import { CheckCircle, TrendingUp, Users, Clock } from 'lucide-react';
+  Badge,
+  Icon,
+  useToast,
+  Input,
+  Card,
+  CardBody,
+  CardHeader,
+  Heading
+} from '@chakra-ui/react'
+import { useState } from 'react'
+import { motion } from 'framer-motion'
+import { FaBrain, FaUser, FaHashtag, FaClock, FaLightbulb, FaChartLine, FaExclamationTriangle } from 'react-icons/fa'
+import { LoadingSpinner } from '../ui/LoadingSpinner'
+import { ProgressRing } from '../ui/ProgressRing'
 
-const ViralPredictor = () => {
-  // State management
-  const [textContent, setTextContent] = useState('🚀 Bitcoin just hit $100K! This is the moment we\'ve all been waiting for! #BTC #Crypto #ToTheMoon');
-  const [username, setUsername] = useState(''); // NEW: Twitter username
-  const [contentType, setContentType] = useState('text');
-  const [niche, setNiche] = useState('cryptocurrency');
-  const [loading, setLoading] = useState(false);
-  const [fetchingCreator, setFetchingCreator] = useState(false); // NEW: Creator fetching state
-  const [creatorData, setCreatorData] = useState(null); // NEW: Creator data from API
-  const [prediction, setPrediction] = useState(null);
-  const [error, setError] = useState('');
+const MotionBox = motion(Box)
 
-  // UI Theme
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
+export default function ViralPredictor() {
+  const [content, setContent] = useState('')
+  const [creator, setCreator] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [results, setResults] = useState(null)
+  const [creatorData, setCreatorData] = useState(null)
+  const [error, setError] = useState('')
+  const [creatorError, setCreatorError] = useState('')
+  const toast = useToast()
 
-  // Content type options
-  const contentTypes = [
-    { value: 'text', label: '📝 Text Tweet' },
-    { value: 'image', label: '📸 Image Post' },
-    { value: 'video', label: '🎥 Video Post' },
-    { value: 'thread', label: '🧵 Thread' },
-    { value: 'poll', label: '📊 Poll' },
-    { value: 'quote', label: '💬 Quote Tweet' },
-    { value: 'reply', label: '↩️ Reply' }
-  ];
-
-  // Niche options (same as before)
-  const niches = [
-    { value: 'cryptocurrency', label: '₿ Cryptocurrency', category: 'Finance' },
-    { value: 'technology', label: '💻 Technology', category: 'Tech' },
-    { value: 'business', label: '💼 Business', category: 'Business' },
-    { value: 'sports', label: '⚽ Sports', category: 'Entertainment' },
-    { value: 'entertainment', label: '🎬 Entertainment', category: 'Entertainment' },
-    { value: 'health', label: '💊 Health & Wellness', category: 'Lifestyle' },
-    { value: 'finance', label: '💰 Finance & Investing', category: 'Finance' },
-    { value: 'news', label: '📰 Breaking News', category: 'News' },
-    { value: 'politics', label: '🏛️ Politics', category: 'News' },
-    { value: 'education', label: '📚 Education', category: 'Education' },
-    { value: 'travel', label: '✈️ Travel', category: 'Lifestyle' },
-    { value: 'food', label: '🍔 Food & Cooking', category: 'Lifestyle' },
-    { value: 'fashion', label: '👗 Fashion & Style', category: 'Lifestyle' },
-    { value: 'gaming', label: '🎮 Gaming', category: 'Entertainment' },
-    { value: 'music', label: '🎵 Music', category: 'Entertainment' },
-    { value: 'art', label: '🎨 Art & Design', category: 'Creative' },
-    { value: 'photography', label: '📷 Photography', category: 'Creative' },
-    { value: 'science', label: '🔬 Science', category: 'Education' },
-    { value: 'ai', label: '🤖 AI & Machine Learning', category: 'Technology' },
-    { value: 'climate', label: '🌍 Climate & Environment', category: 'News' },
-    { value: 'startup', label: '🚀 Startups & Entrepreneurship', category: 'Business' },
-    { value: 'marketing', label: '📈 Marketing & Growth', category: 'Business' },
-    { value: 'personal-development', label: '🌟 Personal Development', category: 'Lifestyle' },
-    { value: 'memes', label: '😂 Memes & Humor', category: 'Entertainment' },
-    { value: 'web3', label: '🌐 Web3 & Blockchain', category: 'Emerging' },
-    { value: 'nft', label: '🖼️ NFTs & Digital Art', category: 'Emerging' },
-    { value: 'defi', label: '🏦 DeFi & Trading', category: 'Emerging' },
-    { value: 'metaverse', label: '🌐 Metaverse', category: 'Emerging' },
-    { value: 'sustainability', label: '🌱 Sustainability', category: 'Emerging' },
-    { value: 'space', label: '🚀 Space & Astronomy', category: 'Emerging' },
-    { value: 'other', label: '📋 Option Not Listed', category: 'Other' }
-  ];
-
-  // NEW: Fetch creator data automatically when username changes
-  const fetchCreatorData = async (twitterUsername) => {
-    if (!twitterUsername || twitterUsername.length < 3) {
-      setCreatorData(null);
-      return;
+  const handlePredict = async () => {
+    if (!content.trim()) {
+      toast({
+        title: "Content Required",
+        description: "Please enter some content to analyze",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+      })
+      return
     }
 
-    setFetchingCreator(true);
+    setLoading(true)
+    setError('')
+    setCreatorError('')
+    setResults(null)
+    setCreatorData(null)
+
     try {
-      const response = await fetch('/api/lookup-creator', {
+      let creatorInfo = null
+      
+      // Step 1: If creator handle provided, look up creator data using MCP
+      if (creator.trim()) {
+        try {
+          // Clean creator handle - remove @ if present
+          const cleanCreator = creator.trim().replace(/^@/, '')
+          
+          const creatorResponse = await fetch('/api/lookup-creator', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ creator: cleanCreator })
+          })
+          
+          const creatorResult = await creatorResponse.json()
+          
+          if (!creatorResult.success) {
+            setCreatorError(creatorResult.error)
+            // Continue without creator data, but show the error
+          } else {
+            creatorInfo = creatorResult.data
+            setCreatorData(creatorInfo)
+          }
+        } catch (creatorErr) {
+          setCreatorError(`Failed to lookup creator: ${creatorErr.message}`)
+          // Continue without creator data
+        }
+      }
+
+      // Step 2: Predict viral probability with content and creator data (if available)
+      const predictionResponse = await fetch('/api/predict-viral-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          username: twitterUsername.replace('@', ''),
-          network: 'twitter'
+          content: content.trim(),
+          creator: creator.trim().replace(/^@/, '') || undefined,
+          creatorData: creatorInfo || undefined
         })
-      });
+      })
 
-      const data = await response.json();
+      const predictionResult = await predictionResponse.json()
+
+      if (!predictionResult.success) {
+        throw new Error(predictionResult.error)
+      }
+
+      setResults(predictionResult)
       
-      if (data.success && data.creator) {
-        setCreatorData({
-          handle: data.creator.handle,
-          followerCount: data.creator.followerCount || 0,
-          verified: data.creator.verified || false,
-          authorityScore: data.creator.authorityScore || 0,
-          mcpSupported: data.creator.mcpSupported || false
-        });
-      } else {
-        setCreatorData(null);
-      }
+      toast({
+        title: "Analysis Complete! 🎉",
+        description: "Your viral prediction is ready",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      })
     } catch (err) {
-      console.error('Creator fetch error:', err);
-      setCreatorData(null);
+      setError(err.message || 'Failed to analyze content')
+      toast({
+        title: "Analysis Error",
+        description: err.message || 'Failed to analyze content',
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      })
     } finally {
-      setFetchingCreator(false);
+      setLoading(false)
     }
-  };
+  }
 
-  // NEW: Auto-fetch creator data when username changes (with debounce)
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchCreatorData(username);
-    }, 500); // 500ms debounce
+  const getViralCategory = (probability) => {
+    if (probability >= 80) return { label: 'Ultra High', color: 'green' }
+    if (probability >= 60) return { label: 'High', color: 'yellow' }
+    if (probability >= 40) return { label: 'Moderate', color: 'orange' }
+    return { label: 'Low', color: 'red' }
+  }
 
-    return () => clearTimeout(timeoutId);
-  }, [username]);
-
-  // Enhanced viral probability analysis with real creator data
-  const analyzeViralProbability = async () => {
-    if (!textContent.trim()) {
-      setError('Please enter content to analyze');
-      return;
-    }
-
-    if (username && !creatorData) {
-      setError('Unable to fetch creator data. Please verify the username or proceed without it.');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    setPrediction(null);
-
-    try {
-      // Prepare post data with real creator data from LunarCrush API
-      const postData = {
-        text: textContent,
-        platform: 'twitter',
-        niche,
-        contentType,
-        username: username || null,
-        // Use real creator data if available, otherwise use defaults
-        creator: creatorData ? {
-          follower_count: creatorData.followerCount,
-          verified: creatorData.verified,
-          handle: creatorData.handle,
-          authority_score: creatorData.authorityScore
-        } : {
-          follower_count: 10000, // Default fallback
-          verified: false,
-          handle: 'anonymous'
-        },
-        created_time: new Date().toISOString(),
-        hashtags: extractHashtags(textContent),
-        mentions: extractMentions(textContent),
-        media_count: ['image', 'video'].includes(contentType) ? 1 : 0,
-      };
-
-      console.log('📊 Sending analysis request with real creator data:', postData);
-
-      const response = await fetch('/api/predict-viral-ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postData }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setPrediction(data.prediction);
-      } else {
-        setError(data.error || 'Analysis failed. Please try again.');
-      }
-    } catch (err) {
-      setError('Network error. Please try again.');
-      console.error('Analysis error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Helper functions to extract hashtags and mentions
-  const extractHashtags = (text) => {
-    const hashtagRegex = /#[a-zA-Z0-9_]+/g;
-    return text.match(hashtagRegex) || [];
-  };
-
-  const extractMentions = (text) => {
-    const mentionRegex = /@[a-zA-Z0-9_]+/g;
-    return text.match(mentionRegex) || [];
-  };
-
-  // Confidence color mapping
-  const getConfidenceColor = (confidence) => {
-    if (confidence >= 80) return 'green';
-    if (confidence >= 60) return 'blue';
-    if (confidence >= 40) return 'yellow';
-    if (confidence >= 20) return 'orange';
-    return 'red';
-  };
-
-  const getViralLabel = (confidence) => {
-    if (confidence >= 80) return '🔥 Ultra Viral';
-    if (confidence >= 60) return '📈 High Viral';
-    if (confidence >= 40) return '📊 Moderate Viral';
-    if (confidence >= 20) return '📉 Low Viral';
-    return '❌ Minimal Viral';
-  };
+  const formatNumber = (num) => {
+    if (!num) return '0'
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
+    return num.toString()
+  }
 
   return (
-    <VStack spacing={6} align="stretch" w="100%" maxW="4xl" mx="auto">
-      {/* Header */}
-      <Box textAlign="center">
-        <Heading size="lg" mb={2}>
-          ✨ Twitter Viral Probability Analyzer
-        </Heading>
-        <Text color="gray.600">
-          AI-powered analysis with content optimization, timing insights, and hashtag intelligence
-        </Text>
-        <Badge colorScheme="purple" mt={2}>
-          ENHANCED WITH CONTENT • TIMING • HASHTAG INTELLIGENCE
-        </Badge>
-      </Box>
+    <VStack spacing={6} w="full">
+      {/* Input Section */}
+      <VStack spacing={4} w="full">
+        <Box w="full">
+          <Text mb={2} fontWeight="500">Content to Analyze</Text>
+          <Textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Enter your social media content here...
 
-      {/* Main Input Form */}
-      <Card bg={cardBg} borderRadius="lg">
-        <CardBody>
-          <Tabs variant="enclosed">
-            <TabList>
-              <Tab>🎯 Analyze Post</Tab>
-              <Tab>📊 Results & Optimization</Tab>
-            </TabList>
+Example: 
+🚀 Bitcoin just broke through $100K resistance! 
 
-            <TabPanels>
-              {/* Analysis Tab */}
-              <TabPanel>
-                <VStack spacing={4}>
-                  <Heading size="md">Post Analysis</Heading>
-                  <Text fontSize="sm" color="gray.600">
-                    Enter your tweet content and creator details for comprehensive viral analysis
-                  </Text>
+The institutional adoption we've been waiting for is finally here. MicroStrategy, Tesla, and now even pension funds are allocating to BTC. 
 
-                  {/* NEW: Twitter Username Input with Auto-Fetch */}
-                  <FormControl>
-                    <FormLabel fontWeight="bold">
-                      🔍 Twitter Username (Auto-Fetch Creator Data)
-                    </FormLabel>
-                    <HStack>
-                      <Input
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="elonmusk"
-                        bg={cardBg}
-                        size="lg"
-                      />
-                      {fetchingCreator && (
-                        <Spinner size="sm" color="blue.500" />
-                      )}
-                    </HStack>
-                    <FormHelperText>
-                      {username && creatorData ? (
-                        <HStack spacing={2}>
-                          <Badge colorScheme="green">✓ Data Fetched</Badge>
-                          <Text fontSize="xs">
-                            @{creatorData.handle} • {creatorData.followerCount.toLocaleString()} followers
-                            {creatorData.verified && ' • Verified'}
-                          </Text>
-                        </HStack>
-                      ) : username && !fetchingCreator ? (
-                        <Badge colorScheme="orange">⚠ Creator not found or processing...</Badge>
-                      ) : (
-                        'Enter Twitter username to auto-fetch real follower data via LunarCrush API'
-                      )}
-                    </FormHelperText>
-                  </FormControl>
+This is just the beginning of the next bull run. 📈
 
-                  {/* Tweet Content */}
-                  <FormControl>
-                    <FormLabel fontWeight="bold">Tweet Content</FormLabel>
-                    <Textarea
-                      value={textContent}
-                      onChange={(e) => setTextContent(e.target.value)}
-                      placeholder="Enter your tweet content here..."
-                      rows={4}
-                      bg={cardBg}
-                    />
-                    <FormHelperText>
-                      {textContent.length}/280 characters • {extractHashtags(textContent).length} hashtags • {extractMentions(textContent).length} mentions
-                    </FormHelperText>
-                  </FormControl>
+#Bitcoin #BTC #CryptoBull #ToTheMoon"
+            resize="vertical"
+            minH="150px"
+            bg="white"
+            borderColor="purple.200"
+            _focus={{ borderColor: 'purple.400', boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)' }}
+          />
+        </Box>
 
-                  {/* Content Type & Niche */}
-                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} w="100%">
-                    <FormControl>
-                      <FormLabel fontWeight="bold">Content Type</FormLabel>
-                      <Select 
-                        value={contentType}
-                        onChange={(e) => setContentType(e.target.value)}
-                        bg={cardBg}
-                      >
-                        {contentTypes.map(type => (
-                          <option key={type.value} value={type.value}>
-                            {type.label}
-                          </option>
-                        ))}
-                      </Select>
-                    </FormControl>
+        <Box w="full">
+          <Text mb={2} fontWeight="500">Creator Handle (Optional)</Text>
+          <Input
+            value={creator}
+            onChange={(e) => setCreator(e.target.value)}
+            placeholder="elonmusk, bitcoin, VitalikButerin, etc. (@ symbol optional)"
+            bg="white"
+            borderColor="purple.200"
+            _focus={{ borderColor: 'purple.400', boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)' }}
+          />
+          <Text fontSize="xs" color="gray.500" mt={1}>
+            We'll use LunarCrush MCP Creator tool to get real follower data and influence metrics
+          </Text>
+        </Box>
 
-                    <FormControl>
-                      <FormLabel fontWeight="bold">Niche/Category</FormLabel>
-                      <Select 
-                        value={niche}
-                        onChange={(e) => setNiche(e.target.value)}
-                        bg={cardBg}
-                      >
-                        {niches.map(n => (
-                          <option key={n.value} value={n.value}>
-                            {n.label}
-                          </option>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </SimpleGrid>
-
-                  {/* Analyze Button */}
-                  <Button
-                    colorScheme="purple"
-                    size="lg"
-                    onClick={analyzeViralProbability}
-                    isLoading={loading}
-                    loadingText="Analyzing with AI..."
-                    w="100%"
-                    leftIcon={<Icon as={TrendingUp} />}
-                  >
-                    ✨ Analyze Viral Potential + Get Optimization Tips
-                  </Button>
-                </VStack>
-              </TabPanel>
-
-              {/* Results Tab */}
-              <TabPanel>
-                {prediction ? (
-                  <VStack spacing={6} align="stretch">
-                    {/* Main Prediction Score */}
-                    <Box textAlign="center">
-                      <Badge
-                        fontSize="lg"
-                        p={3}
-                        borderRadius="full"
-                        colorScheme={getConfidenceColor(prediction.confidence)}
-                      >
-                        {getViralLabel(prediction.confidence)}
-                      </Badge>
-                      <Heading
-                        size="2xl"
-                        mt={2}
-                        color={`${getConfidenceColor(prediction.confidence)}.500`}
-                      >
-                        {prediction.confidence}%
-                      </Heading>
-                      <Text color="gray.600" mt={2}>
-                        Estimated Viral Probability
-                      </Text>
-                      <Progress
-                        value={prediction.confidence}
-                        size="lg"
-                        colorScheme={getConfidenceColor(prediction.confidence)}
-                        mt={4}
-                        borderRadius="full"
-                      />
-                    </Box>
-
-                    <Divider />
-
-                    {/* Twitter-Specific Metrics */}
-                    <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
-                      <Stat textAlign="center">
-                        <StatLabel>Twitter Optimization</StatLabel>
-                        <StatNumber fontSize="2xl">
-                          {prediction.platformFit || Math.floor(prediction.confidence * 0.9)}%
-                        </StatNumber>
-                        <StatHelpText>Platform Fit</StatHelpText>
-                      </Stat>
-
-                      <Stat textAlign="center">
-                        <StatLabel>Engagement Potential</StatLabel>
-                        <StatNumber fontSize="2xl">
-                          {prediction.expectedEngagement || Math.floor(prediction.confidence * 12)}
-                        </StatNumber>
-                        <StatHelpText>Expected Interactions</StatHelpText>
-                      </Stat>
-
-                      <Stat textAlign="center">
-                        <StatLabel>Content Score</StatLabel>
-                        <StatNumber fontSize="2xl">
-                          {prediction.contentScore || Math.floor(prediction.confidence * 0.8)}%
-                        </StatNumber>
-                        <StatHelpText>Content Quality</StatHelpText>
-                      </Stat>
-
-                      <Stat textAlign="center">
-                        <StatLabel>Creator Authority</StatLabel>
-                        <StatNumber fontSize="2xl">
-                          {creatorData ? Math.floor(creatorData.authorityScore * 100) : 'N/A'}%
-                        </StatNumber>
-                        <StatHelpText>
-                          {creatorData ? `${creatorData.followerCount.toLocaleString()} followers` : 'Not Available'}
-                        </StatHelpText>
-                      </Stat>
-                    </SimpleGrid>
-
-                    {/* AI Optimization Suggestions */}
-                    {prediction.optimizedVersions && prediction.optimizedVersions.length > 0 && (
-                      <Box>
-                        <Heading size="md" mb={4}>🚀 AI-Optimized Versions</Heading>
-                        <VStack spacing={3}>
-                          {prediction.optimizedVersions.slice(0, 3).map((version, index) => (
-                            <Alert key={index} status="info" borderRadius="lg">
-                              <AlertIcon />
-                              <VStack align="start" spacing={1} flex={1}>
-                                <Text fontWeight="bold">Version {index + 1}:</Text>
-                                <Text fontSize="sm">{version}</Text>
-                              </VStack>
-                            </Alert>
-                          ))}
-                        </VStack>
-                      </Box>
-                    )}
-
-                    {/* Key Insights */}
-                    {prediction.insights && (
-                      <Box>
-                        <Heading size="md" mb={4}>💡 Key Insights</Heading>
-                        <VStack spacing={2} align="start">
-                          {prediction.insights.map((insight, index) => (
-                            <HStack key={index} align="start">
-                              <Icon as={CheckCircle} color="green.500" mt={1} />
-                              <Text fontSize="sm">{insight}</Text>
-                            </HStack>
-                          ))}
-                        </VStack>
-                      </Box>
-                    )}
-                  </VStack>
-                ) : (
-                  <Box textAlign="center" py={8}>
-                    <Text color="gray.500">
-                      Click "Analyze Viral Potential" to see your results and optimization tips
-                    </Text>
-                  </Box>
-                )}
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
-        </CardBody>
-      </Card>
-
-      {/* Error Display */}
-      {error && (
-        <Alert status="error" borderRadius="lg">
-          <AlertIcon />
-          <Text>{error}</Text>
-        </Alert>
-      )}
+        <Button
+          onClick={handlePredict}
+          isLoading={loading}
+          loadingText="Analyzing with AI + MCP..."
+          size="lg"
+          variant="viral"
+          w="full"
+          leftIcon={<Icon as={FaBrain} />}
+          isDisabled={!content.trim()}
+        >
+          Predict Viral Probability
+        </Button>
+      </VStack>
 
       {/* Loading State */}
       {loading && (
-        <Card bg={cardBg} borderRadius="lg" borderWidth="2px" borderColor="purple.200">
-          <CardBody>
-            <VStack spacing={4}>
-              <Spinner size="lg" color="purple.500" />
-              <VStack spacing={2}>
-                <Text fontWeight="bold" color="purple.600">
-                  🤖 AI Analysis in Progress
-                </Text>
-                <Text fontSize="sm" color="gray.600" textAlign="center">
-                  • Processing content with Gemini AI
-                  <br />
-                  • Analyzing viral potential with ML algorithms
-                  <br />
-                  • Generating optimization recommendations
-                  {creatorData && (
-                    <>
-                      <br />
-                      • Using real creator data: @{creatorData.handle} ({creatorData.followerCount.toLocaleString()} followers)
-                    </>
-                  )}
-                </Text>
-              </VStack>
-            </VStack>
-          </CardBody>
-        </Card>
+        <LoadingSpinner
+          title="🤖 Real-Time Analysis"
+          subtitle={`${creator.trim() ? '• Looking up creator data via LunarCrush MCP Creator tool' : ''}
+- Processing content with Google Gemini AI
+- Analyzing viral patterns and sentiment
+- Calculating real engagement predictions
+- NO mock data - only real MCP results`}
+          icon={<Icon as={FaBrain} color="purple.500" boxSize={6} />}
+        />
+      )}
+
+      {/* Creator Error */}
+      {creatorError && (
+        <Alert status="warning" borderRadius="lg">
+          <AlertIcon />
+          <VStack align="start" spacing={1}>
+            <Text fontWeight="bold">MCP Creator Lookup Failed</Text>
+            <AlertDescription>{creatorError}</AlertDescription>
+            <Text fontSize="sm" color="gray.600">
+              Continuing analysis without creator data...
+            </Text>
+          </VStack>
+        </Alert>
+      )}
+
+      {/* General Error */}
+      {error && (
+        <Alert status="error" borderRadius="lg">
+          <AlertIcon />
+          <VStack align="start" spacing={1}>
+            <Text fontWeight="bold">Analysis Failed</Text>
+            <AlertDescription>{error}</AlertDescription>
+          </VStack>
+        </Alert>
+      )}
+
+      {/* Results Section - ONLY REAL DATA */}
+      {results && (
+        <MotionBox
+          w="full"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <VStack spacing={6}>
+            {/* Creator Data Display - ONLY if real data available */}
+            {creatorData && (
+              <Card w="full" bg="blue.50" borderColor="blue.200" borderWidth="1px">
+                <CardHeader pb={2}>
+                  <HStack spacing={3}>
+                    <Icon as={FaUser} color="blue.500" boxSize={5} />
+                    <Heading size="sm">Creator Data (LunarCrush MCP)</Heading>
+                  </HStack>
+                </CardHeader>
+                <CardBody pt={0}>
+                  <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+                    <VStack spacing={1}>
+                      <Text fontSize="lg" fontWeight="bold" color="blue.600">
+                        @{creatorData.handle}
+                      </Text>
+                      <Text fontSize="xs" color="gray.600">Handle</Text>
+                    </VStack>
+                    <VStack spacing={1}>
+                      <Text fontSize="lg" fontWeight="bold" color="blue.600">
+                        {formatNumber(creatorData.followerCount)}
+                      </Text>
+                      <Text fontSize="xs" color="gray.600">Followers</Text>
+                    </VStack>
+                    <VStack spacing={1}>
+                      <Text fontSize="lg" fontWeight="bold" color="blue.600">
+                        {creatorData.engagements ? formatNumber(creatorData.engagements) : 'N/A'}
+                      </Text>
+                      <Text fontSize="xs" color="gray.600">Engagements</Text>
+                    </VStack>
+                    <VStack spacing={1}>
+                      <Text fontSize="lg" fontWeight="bold" color="blue.600">
+                        {creatorData.source === 'LunarCrush MCP Creator Tool' ? 'MCP' : 'N/A'}
+                      </Text>
+                      <Text fontSize="xs" color="gray.600">Data Source</Text>
+                    </VStack>
+                  </SimpleGrid>
+                </CardBody>
+              </Card>
+            )}
+
+            {/* Main Probability Display */}
+            <Card w="full" bg="purple.50" borderColor="purple.200" borderWidth="1px">
+              <CardHeader pb={2}>
+                <HStack spacing={3}>
+                  <Icon as={FaChartLine} color="purple.500" boxSize={5} />
+                  <Heading size="sm">AI Viral Probability Analysis</Heading>
+                </HStack>
+              </CardHeader>
+              <CardBody pt={0}>
+                <HStack justify="center" spacing={8} wrap="wrap">
+                  <ProgressRing
+                    value={results.viralProbability}
+                    size={140}
+                    strokeWidth={10}
+                    label="Viral Probability"
+                    color="purple.500"
+                  />
+                  <VStack spacing={3}>
+                    <Badge
+                      colorScheme={getViralCategory(results.viralProbability).color}
+                      fontSize="md"
+                      px={4}
+                      py={2}
+                      borderRadius="full"
+                    >
+                      {getViralCategory(results.viralProbability).label} Potential
+                    </Badge>
+                    <VStack spacing={1}>
+                      <Text fontSize="sm" color="gray.600">AI Confidence</Text>
+                      <Text fontSize="xl" fontWeight="bold" color="blue.600">
+                        {results.confidenceScore}%
+                      </Text>
+                    </VStack>
+                  </VStack>
+                </HStack>
+              </CardBody>
+            </Card>
+
+            {/* Detailed Metrics - ONLY REAL DATA */}
+            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} w="full">
+              <Stat bg="purple.50" p={4} borderRadius="lg" border="1px" borderColor="purple.200">
+                <StatLabel fontSize="sm">Expected Engagement</StatLabel>
+                <StatNumber color="purple.600">
+                  {results.expectedEngagement ? formatNumber(results.expectedEngagement) : 'Not Available'}
+                </StatNumber>
+                <StatHelpText>
+                  {creatorData ? 'Based on real MCP follower data' : 'Requires creator data'}
+                </StatHelpText>
+              </Stat>
+
+              <Stat bg="blue.50" p={4} borderRadius="lg" border="1px" borderColor="blue.200">
+                <StatLabel fontSize="sm">Viral Category</StatLabel>
+                <StatNumber color="blue.600">
+                  {results.viralCategory}
+                </StatNumber>
+                <StatHelpText>AI ML analysis</StatHelpText>
+              </Stat>
+
+              <Stat bg="green.50" p={4} borderRadius="lg" border="1px" borderColor="green.200">
+                <StatLabel fontSize="sm">Potential Reach</StatLabel>
+                <StatNumber color="green.600">
+                  {creatorData ? formatNumber(Math.floor(creatorData.followerCount * (results.viralProbability / 100))) : 'N/A'}
+                </StatNumber>
+                <StatHelpText>
+                  {creatorData ? 'Calculated from real MCP data' : 'Requires creator data'}
+                </StatHelpText>
+              </Stat>
+            </SimpleGrid>
+
+            {/* AI Recommendations - ONLY if provided by AI */}
+            {results.recommendations && results.recommendations.length > 0 && (
+              <Card w="full" bg="yellow.50" borderColor="yellow.200" borderWidth="1px">
+                <CardHeader pb={2}>
+                  <HStack spacing={3}>
+                    <Icon as={FaLightbulb} color="yellow.600" boxSize={5} />
+                    <Heading size="sm">AI Optimization Suggestions</Heading>
+                  </HStack>
+                </CardHeader>
+                <CardBody pt={0}>
+                  <VStack spacing={2} align="start">
+                    {results.recommendations.map((rec, index) => (
+                      <Text key={index} fontSize="sm" color="yellow.800">
+                        • {rec}
+                      </Text>
+                    ))}
+                  </VStack>
+                </CardBody>
+              </Card>
+            )}
+
+            {/* Technical Details */}
+            <Box w="full" bg="gray.50" p={4} borderRadius="lg" border="1px" borderColor="gray.200">
+              <Text fontSize="xs" color="gray.600" textAlign="center">
+                Analysis: {results.analysisSource} • 
+                {creatorData ? ` Creator data: LunarCrush MCP Creator tool (${formatNumber(creatorData.followerCount)} followers) •` : ' No creator data •'}
+                {' '}Zero mock data • Real MCP results • {results.timestamp}
+              </Text>
+            </Box>
+          </VStack>
+        </MotionBox>
       )}
     </VStack>
-  );
-};
-
-export default ViralPredictor;
+  )
+}
