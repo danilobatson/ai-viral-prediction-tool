@@ -2,22 +2,22 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  images: {
-    domains: ['lunarcrush.com'],
+  experimental: {
+    esmExternals: true,
   },
-  async headers() {
-    return [
-      {
-        source: '/api/:path*',
-        headers: [
-          { key: 'Access-Control-Allow-Credentials', value: 'true' },
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT' },
-          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version' },
-        ]
-      }
-    ]
+  webpack: (config, { isServer }) => {
+    // Handle ES modules properly
+    config.experiments = {
+      ...config.experiments,
+      topLevelAwait: true,
+    };
+    
+    return config;
   },
-}
+  env: {
+    LUNARCRUSH_API_KEY: process.env.LUNARCRUSH_API_KEY,
+    GOOGLE_GEMINI_API_KEY: process.env.GOOGLE_GEMINI_API_KEY,
+  },
+};
 
-module.exports = nextConfig
+export default nextConfig;

@@ -1,70 +1,33 @@
 {
   "name": "ai-viral-prediction-tool",
-  "version": "2.0.0",
-  "description": "AI tool that predicts viral crypto posts with high accuracy - Production Ready",
-  "main": "index.js",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3001",
     "lint": "next lint",
-    "test": "node scripts/test-all.js",
-    "test:quick": "node scripts/testing/verify-functionality.js",
-    "test:api": "node scripts/testing/test-apis.js",
-    "test:edge": "node scripts/testing/edge-cases/comprehensive-edge-tests.js",
-    "test:env": "node scripts/check-environment.js",
-    "test:all": "npm run test:env && npm run test:quick && npm run test:edge",
-    "clean": "rm -rf .next && rm -rf node_modules/.cache",
-    "deploy": "npm run test:all && npm run build && npx vercel --prod"
+    "export": "next export"
   },
   "dependencies": {
-    "@chakra-ui/icons": "^2.2.4",
-    "@chakra-ui/next-js": "^2.4.2",
-    "@chakra-ui/react": "^2.10.9",
-    "@chakra-ui/theme-tools": "^2.2.9",
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
-    "@fontsource/inter": "^5.2.6",
-    "@google/generative-ai": "^0.24.1",
-    "@modelcontextprotocol/sdk": "^1.15.1",
-    "@radix-ui/react-slot": "^1.2.3",
-    "axios": "^1.6.0",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "framer-motion": "^10.18.0",
-    "lucide-react": "^0.525.0",
-    "next": "^14.0.0",
-    "react": "^18.0.0",
-    "react-confetti-explosion": "^3.0.3",
-    "react-dom": "^18.0.0",
-    "react-icons": "^5.5.0",
-    "recharts": "^3.1.0",
-    "tailwind-merge": "^3.3.1"
+    "@chakra-ui/react": "^2.8.2",
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.5",
+    "@google/generative-ai": "^0.21.0",
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "framer-motion": "^11.11.17",
+    "lucide-react": "^0.460.0",
+    "next": "14.2.18",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "eslint": "^8.0.0",
-    "eslint-config-next": "^14.0.0"
-  },
-  "keywords": [
-    "ai",
-    "crypto",
-    "viral",
-    "prediction",
-    "social-media",
-    "next.js",
-    "api",
-    "production-ready",
-    "gemini-ai",
-    "lunarcrush",
-    "mcp"
-  ],
-  "author": "Danilo Batson",
-  "license": "MIT",
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
-  },
-  "type": "module"
+    "@types/node": "^20.17.6",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "14.2.18",
+    "typescript": "^5.6.3"
+  }
 }
