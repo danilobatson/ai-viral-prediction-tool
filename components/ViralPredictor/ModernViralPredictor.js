@@ -59,9 +59,9 @@ export default function ModernViralPredictor() {
 	const cardBg = useColorModeValue('white', 'gray.800');
 
 	const scrollToPredictor = () => {
-		predictorRef.current?.scrollIntoView({ 
+		predictorRef.current?.scrollIntoView({
 			behavior: 'smooth',
-			block: 'start'
+			block: 'start',
 		});
 	};
 
@@ -89,14 +89,14 @@ export default function ModernViralPredictor() {
 			};
 
 			updateProgress('connecting');
-			
+
 			if (creator.trim()) {
 				updateProgress('fetching');
 			}
-			
+
 			updateProgress('analyzing');
 
-			const predictionResponse = await fetch('/api/predict-viral-ai', {
+			const predictionResponse = await fetch('/api/analyze', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -121,14 +121,13 @@ export default function ModernViralPredictor() {
 
 			toast({
 				title: `${predictionResult.viralProbability}% Viral Probability!`,
-				description: predictionResult.hasCreatorData 
-					? 'Enhanced with real creator metrics' 
+				description: predictionResult.hasCreatorData
+					? 'Enhanced with real creator metrics'
 					: 'Content-only analysis',
 				status: predictionResult.viralProbability >= 70 ? 'success' : 'info',
 				duration: 5000,
 				isClosable: true,
 			});
-
 		} catch (err) {
 			setError(err.message);
 			setProgressStep('error');
@@ -146,49 +145,62 @@ export default function ModernViralPredictor() {
 
 	const getViralCategoryColor = (category) => {
 		switch (category) {
-			case 'Ultra High': return 'red'
-			case 'High': return 'orange'
-			case 'Moderate': return 'yellow'
-			case 'Low': return 'gray'
-			default: return 'gray'
+			case 'Ultra High':
+				return 'red';
+			case 'High':
+				return 'orange';
+			case 'Moderate':
+				return 'yellow';
+			case 'Low':
+				return 'gray';
+			default:
+				return 'gray';
 		}
 	};
 
 	return (
-		<Box minH="100vh" bg={bg}>
+		<Box minH='100vh' bg={bg}>
 			<ThemeToggle />
-			<ConfettiEffect trigger={showConfetti} viralProbability={results?.viralProbability} />
-			
+			<ConfettiEffect
+				trigger={showConfetti}
+				viralProbability={results?.viralProbability}
+			/>
+
 			{/* Modern Hero Section */}
 			<ModernHero onScrollToPredictor={scrollToPredictor} />
 
 			{/* Main Content */}
-			<Container maxW="6xl" py={20} ref={predictorRef}>
-				<VStack spacing={12} align="stretch">
+			<Container maxW='6xl' py={20} ref={predictorRef}>
+				<VStack spacing={12} align='stretch'>
 					{/* Input Section */}
 					<MotionBox
 						initial={{ opacity: 0, y: 50 }}
 						whileInView={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.8 }}
-						viewport={{ once: true }}
-					>
+						viewport={{ once: true }}>
 						<GlassCard p={8}>
 							<VStack spacing={6}>
-								<VStack spacing={2} textAlign="center">
-									<Heading size="lg" bgGradient="linear(to-r, purple.400, pink.400)" bgClip="text">
+								<VStack spacing={2} textAlign='center'>
+									<Heading
+										size='lg'
+										bgGradient='linear(to-r, purple.400, pink.400)'
+										bgClip='text'>
 										✨ Analyze Your Content
 									</Heading>
-									<Text color="gray.600">
-										Paste any content and add a creator handle for enhanced predictions
+									<Text color='gray.600'>
+										Paste any content and add a creator handle for enhanced
+										predictions
 									</Text>
 								</VStack>
 
-								<Alert status="info" borderRadius="lg">
+								<Alert status='info' borderRadius='lg'>
 									<AlertIcon />
 									<Box>
-										<Text fontWeight="bold">Pro Tip</Text>
-										<Text fontSize="sm">
-											Add a creator handle (like "elonmusk") to get predictions enhanced with their real follower data and engagement patterns.
+										<Text fontWeight='bold'>Pro Tip</Text>
+										<Text fontSize='sm'>
+											Add a creator handle (like "elonmusk") to get predictions
+											enhanced with their real follower data and engagement
+											patterns.
 										</Text>
 									</Box>
 								</Alert>
@@ -203,53 +215,52 @@ The institutional adoption we've been waiting for is finally here. MicroStrategy
 This is just the beginning of the next bull run. 📈
 
 #Bitcoin #BTC #CryptoBull #ToTheMoon"
-									size="lg"
-									minH="200px"
-									resize="vertical"
+									size='lg'
+									minH='200px'
+									resize='vertical'
 									bg={cardBg}
-									border="2px solid"
-									borderColor="transparent"
+									border='2px solid'
+									borderColor='transparent'
 									_focus={{
-										borderColor: "purple.400",
-										boxShadow: "0 0 0 1px purple.400",
+										borderColor: 'purple.400',
+										boxShadow: '0 0 0 1px purple.400',
 									}}
-									borderRadius="xl"
+									borderRadius='xl'
 								/>
-								
-								<HStack w="full" spacing={4}>
+
+								<HStack w='full' spacing={4}>
 									<Input
 										value={creator}
 										onChange={(e) => setCreator(e.target.value)}
-										placeholder="Creator handle (optional): elonmusk"
-										size="lg"
+										placeholder='Creator handle (optional): elonmusk'
+										size='lg'
 										flex={1}
 										bg={cardBg}
-										border="2px solid"
-										borderColor="transparent"
+										border='2px solid'
+										borderColor='transparent'
 										_focus={{
-											borderColor: "purple.400",
-											boxShadow: "0 0 0 1px purple.400",
+											borderColor: 'purple.400',
+											boxShadow: '0 0 0 1px purple.400',
 										}}
-										borderRadius="xl"
+										borderRadius='xl'
 									/>
 									<Button
-										colorScheme="purple"
+										colorScheme='purple'
 										onClick={handlePredict}
 										isLoading={loading}
-										loadingText="Analyzing..."
-										size="lg"
-										minW="200px"
-										borderRadius="xl"
-										bgGradient="linear(to-r, purple.400, pink.400)"
+										loadingText='Analyzing...'
+										size='lg'
+										minW='200px'
+										borderRadius='xl'
+										bgGradient='linear(to-r, purple.400, pink.400)'
 										_hover={{
-											bgGradient: "linear(to-r, purple.500, pink.500)",
-											transform: "translateY(-2px)",
-											boxShadow: "xl",
+											bgGradient: 'linear(to-r, purple.500, pink.500)',
+											transform: 'translateY(-2px)',
+											boxShadow: 'xl',
 										}}
 										_active={{
-											transform: "translateY(0px)",
-										}}
-									>
+											transform: 'translateY(0px)',
+										}}>
 										🧠 Predict Viral Potential
 									</Button>
 								</HStack>
@@ -262,10 +273,9 @@ This is just the beginning of the next bull run. 📈
 						<MotionBox
 							initial={{ opacity: 0, scale: 0.9 }}
 							animate={{ opacity: 1, scale: 1 }}
-							transition={{ duration: 0.3 }}
-						>
+							transition={{ duration: 0.3 }}>
 							<GlassCard p={6}>
-								<AnalysisProgress 
+								<AnalysisProgress
 									steps={[progressStep]}
 									currentStep={progressStep}
 									error={error}
@@ -279,30 +289,32 @@ This is just the beginning of the next bull run. 📈
 						<MotionBox
 							initial={{ opacity: 0, y: 50 }}
 							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.8 }}
-						>
+							transition={{ duration: 0.8 }}>
 							<VStack spacing={8}>
 								{/* Viral Probability Meter */}
-								<GlassCard p={8} textAlign="center">
+								<GlassCard p={8} textAlign='center'>
 									<VStack spacing={6}>
-										<ViralMeter 
+										<ViralMeter
 											probability={results.viralProbability}
 											category={results.viralCategory}
 											isAnimating={true}
 										/>
-										
+
 										<VStack spacing={2}>
-											<Badge 
-												colorScheme={getViralCategoryColor(results.viralCategory)} 
-												fontSize="lg"
+											<Badge
+												colorScheme={getViralCategoryColor(
+													results.viralCategory
+												)}
+												fontSize='lg'
 												px={4}
 												py={2}
-												borderRadius="full"
-											>
+												borderRadius='full'>
 												{results.viralCategory} Viral Potential
 											</Badge>
-											<Text color="gray.600">
-												{results.hasCreatorData ? '✅ Enhanced with creator data' : '📊 Content-only analysis'}
+											<Text color='gray.600'>
+												{results.hasCreatorData
+													? '✅ Enhanced with creator data'
+													: '📊 Content-only analysis'}
 											</Text>
 										</VStack>
 									</VStack>
@@ -313,29 +325,48 @@ This is just the beginning of the next bull run. 📈
 									<GlassCard p={6}>
 										<CardHeader pb={2}>
 											<HStack spacing={3}>
-												<Icon as={FaUser} color="blue.500" boxSize={5} />
-												<Heading size="md">Creator Analytics</Heading>
+												<Icon as={FaUser} color='blue.500' boxSize={5} />
+												<Heading size='md'>Creator Analytics</Heading>
 											</HStack>
 										</CardHeader>
 										<CardBody>
 											<SimpleGrid columns={{ base: 2, md: 4 }} spacing={6}>
 												{[
-													{ label: 'Handle', value: `@${results.creatorData.handle}`, color: 'blue' },
-													{ label: 'Followers', value: formatNumber(results.creatorData.followers), color: 'green' },
-													{ label: 'Engagements', value: formatNumber(results.creatorData.engagements), color: 'purple' },
-													{ label: 'Expected', value: formatNumber(results.expectedEngagement), color: 'orange' },
+													{
+														label: 'Handle',
+														value: `@${results.creatorData.handle}`,
+														color: 'blue',
+													},
+													{
+														label: 'Followers',
+														value: formatNumber(results.creatorData.followers),
+														color: 'green',
+													},
+													{
+														label: 'Engagements',
+														value: formatNumber(
+															results.creatorData.engagements
+														),
+														color: 'purple',
+													},
+													{
+														label: 'Expected',
+														value: formatNumber(results.expectedEngagement),
+														color: 'orange',
+													},
 												].map((stat, index) => (
 													<MotionBox
 														key={stat.label}
 														initial={{ opacity: 0, y: 20 }}
 														animate={{ opacity: 1, y: 0 }}
-														transition={{ duration: 0.5, delay: index * 0.1 }}
-													>
-														<Stat textAlign="center">
-															<StatNumber fontSize="2xl" color={`${stat.color}.500`}>
+														transition={{ duration: 0.5, delay: index * 0.1 }}>
+														<Stat textAlign='center'>
+															<StatNumber
+																fontSize='2xl'
+																color={`${stat.color}.500`}>
 																{stat.value}
 															</StatNumber>
-															<StatLabel fontSize="sm" color="gray.600">
+															<StatLabel fontSize='sm' color='gray.600'>
 																{stat.label}
 															</StatLabel>
 														</Stat>
@@ -351,32 +382,47 @@ This is just the beginning of the next bull run. 📈
 									<GlassCard p={6}>
 										<CardHeader pb={2}>
 											<HStack spacing={3}>
-												<Icon as={FaBrain} color="purple.500" boxSize={5} />
-												<Heading size="md">Psychology Analysis</Heading>
+												<Icon as={FaBrain} color='purple.500' boxSize={5} />
+												<Heading size='md'>Psychology Analysis</Heading>
 											</HStack>
 										</CardHeader>
 										<CardBody>
 											<SimpleGrid columns={{ base: 2, md: 4 }} spacing={6}>
 												{[
-													{ key: 'emotional', label: 'Emotional Trigger', desc: 'Joy, surprise, etc.' },
-													{ key: 'socialCurrency', label: 'Social Currency', desc: 'Sharing value' },
-													{ key: 'practicalValue', label: 'Practical Value', desc: 'Useful info' },
-													{ key: 'story', label: 'Story Element', desc: 'Narrative appeal' },
+													{
+														key: 'emotional',
+														label: 'Emotional Trigger',
+														desc: 'Joy, surprise, etc.',
+													},
+													{
+														key: 'socialCurrency',
+														label: 'Social Currency',
+														desc: 'Sharing value',
+													},
+													{
+														key: 'practicalValue',
+														label: 'Practical Value',
+														desc: 'Useful info',
+													},
+													{
+														key: 'story',
+														label: 'Story Element',
+														desc: 'Narrative appeal',
+													},
 												].map((item, index) => (
 													<MotionBox
 														key={item.key}
 														initial={{ opacity: 0, scale: 0.8 }}
 														animate={{ opacity: 1, scale: 1 }}
-														transition={{ duration: 0.5, delay: index * 0.1 }}
-													>
-														<Stat textAlign="center">
-															<StatNumber fontSize="3xl" color="purple.500">
+														transition={{ duration: 0.5, delay: index * 0.1 }}>
+														<Stat textAlign='center'>
+															<StatNumber fontSize='3xl' color='purple.500'>
 																{results.psychologyScore[item.key]}%
 															</StatNumber>
-															<StatLabel fontWeight="bold">
+															<StatLabel fontWeight='bold'>
 																{item.label}
 															</StatLabel>
-															<StatHelpText fontSize="xs">
+															<StatHelpText fontSize='xs'>
 																{item.desc}
 															</StatHelpText>
 														</Stat>
@@ -388,98 +434,124 @@ This is just the beginning of the next bull run. 📈
 								)}
 
 								{/* Recommendations & Hashtags Grid */}
-								<SimpleGrid columns={{ base: 1, lg: 2 }} spacing={8} w="full">
+								<SimpleGrid columns={{ base: 1, lg: 2 }} spacing={8} w='full'>
 									{/* Recommendations */}
-									{results.recommendations && results.recommendations.length > 0 && (
-										<GlassCard p={6}>
-											<CardHeader pb={2}>
-												<HStack spacing={3}>
-													<Icon as={FaLightbulb} color="orange.500" boxSize={5} />
-													<Heading size="md">Optimization Tips</Heading>
-												</HStack>
-											</CardHeader>
-											<CardBody>
-												<VStack align="start" spacing={4}>
-													{results.recommendations.map((rec, index) => (
-														<MotionBox
-															key={index}
-															initial={{ opacity: 0, x: -20 }}
-															animate={{ opacity: 1, x: 0 }}
-															transition={{ duration: 0.5, delay: index * 0.1 }}
-														>
-															<HStack align="start" spacing={3}>
-																<Badge colorScheme="orange" borderRadius="full" minW="24px" h="24px" display="flex" alignItems="center" justifyContent="center">
-																	{index + 1}
-																</Badge>
-																<Text fontSize="sm">{rec}</Text>
-															</HStack>
-														</MotionBox>
-													))}
-												</VStack>
-											</CardBody>
-										</GlassCard>
-									)}
-
-									{/* Hashtags & Timing */}
-									<VStack spacing={8}>
-										{/* Hashtags */}
-										{results.optimizedHashtags && results.optimizedHashtags.length > 0 && (
-											<GlassCard p={6} w="full">
+									{results.recommendations &&
+										results.recommendations.length > 0 && (
+											<GlassCard p={6}>
 												<CardHeader pb={2}>
 													<HStack spacing={3}>
-														<Icon as={FaHashtag} color="blue.500" boxSize={5} />
-														<Heading size="md">Optimized Hashtags</Heading>
+														<Icon
+															as={FaLightbulb}
+															color='orange.500'
+															boxSize={5}
+														/>
+														<Heading size='md'>Optimization Tips</Heading>
 													</HStack>
 												</CardHeader>
 												<CardBody>
-													<Wrap>
-														{results.optimizedHashtags.map((tag, index) => (
-															<WrapItem key={index}>
-																<MotionBox
-																	initial={{ opacity: 0, scale: 0.8 }}
-																	animate={{ opacity: 1, scale: 1 }}
-																	transition={{ duration: 0.3, delay: index * 0.05 }}
-																	whileHover={{ scale: 1.05 }}
-																>
-																	<Badge 
-																		colorScheme="blue" 
-																		variant="outline" 
-																		fontSize="sm"
-																		px={3}
-																		py={1}
-																		borderRadius="full"
-																	>
-																		{tag}
+													<VStack align='start' spacing={4}>
+														{results.recommendations.map((rec, index) => (
+															<MotionBox
+																key={index}
+																initial={{ opacity: 0, x: -20 }}
+																animate={{ opacity: 1, x: 0 }}
+																transition={{
+																	duration: 0.5,
+																	delay: index * 0.1,
+																}}>
+																<HStack align='start' spacing={3}>
+																	<Badge
+																		colorScheme='orange'
+																		borderRadius='full'
+																		minW='24px'
+																		h='24px'
+																		display='flex'
+																		alignItems='center'
+																		justifyContent='center'>
+																		{index + 1}
 																	</Badge>
-																</MotionBox>
-															</WrapItem>
+																	<Text fontSize='sm'>{rec}</Text>
+																</HStack>
+															</MotionBox>
 														))}
-													</Wrap>
+													</VStack>
 												</CardBody>
 											</GlassCard>
 										)}
 
+									{/* Hashtags & Timing */}
+									<VStack spacing={8}>
+										{/* Hashtags */}
+										{results.optimizedHashtags &&
+											results.optimizedHashtags.length > 0 && (
+												<GlassCard p={6} w='full'>
+													<CardHeader pb={2}>
+														<HStack spacing={3}>
+															<Icon
+																as={FaHashtag}
+																color='blue.500'
+																boxSize={5}
+															/>
+															<Heading size='md'>Optimized Hashtags</Heading>
+														</HStack>
+													</CardHeader>
+													<CardBody>
+														<Wrap>
+															{results.optimizedHashtags.map((tag, index) => (
+																<WrapItem key={index}>
+																	<MotionBox
+																		initial={{ opacity: 0, scale: 0.8 }}
+																		animate={{ opacity: 1, scale: 1 }}
+																		transition={{
+																			duration: 0.3,
+																			delay: index * 0.05,
+																		}}
+																		whileHover={{ scale: 1.05 }}>
+																		<Badge
+																			colorScheme='blue'
+																			variant='outline'
+																			fontSize='sm'
+																			px={3}
+																			py={1}
+																			borderRadius='full'>
+																			{tag}
+																		</Badge>
+																	</MotionBox>
+																</WrapItem>
+															))}
+														</Wrap>
+													</CardBody>
+												</GlassCard>
+											)}
+
 										{/* Timing */}
 										{results.optimalTiming && (
-											<GlassCard p={6} w="full">
+											<GlassCard p={6} w='full'>
 												<CardHeader pb={2}>
 													<HStack spacing={3}>
-														<Icon as={FaClock} color="green.500" boxSize={5} />
-														<Heading size="md">Optimal Timing</Heading>
+														<Icon as={FaClock} color='green.500' boxSize={5} />
+														<Heading size='md'>Optimal Timing</Heading>
 													</HStack>
 												</CardHeader>
 												<CardBody>
-													<VStack align="start" spacing={3}>
+													<VStack align='start' spacing={3}>
 														<HStack>
-															<Text fontWeight="bold" color="green.500">🕐 Best Time:</Text>
+															<Text fontWeight='bold' color='green.500'>
+																🕐 Best Time:
+															</Text>
 															<Text>{results.optimalTiming.bestTime}</Text>
 														</HStack>
 														<HStack>
-															<Text fontWeight="bold" color="green.500">📅 Best Days:</Text>
+															<Text fontWeight='bold' color='green.500'>
+																📅 Best Days:
+															</Text>
 															<Text>{results.optimalTiming.bestDays}</Text>
 														</HStack>
 														<HStack>
-															<Text fontWeight="bold" color="green.500">🌍 Timezone:</Text>
+															<Text fontWeight='bold' color='green.500'>
+																🌍 Timezone:
+															</Text>
 															<Text>{results.optimalTiming.timezone}</Text>
 														</HStack>
 													</VStack>

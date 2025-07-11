@@ -77,7 +77,7 @@ export default function ViralPredictor() {
 		setProgressMessage(message);
 	};
 
-			const handlePredict = async () => {
+	const handlePredict = async () => {
 		if (!content.trim()) {
 			toast({
 				title: 'Tweet Required',
@@ -96,72 +96,70 @@ export default function ViralPredictor() {
 		setShowConfetti(false);
 
 		try {
-			// Use streaming endpoint for real-time updates
-			const response = await fetch('/api/analyze-stream', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ 
-					content: content.trim(), 
-					creator: creator.trim().replace(/^@+/, '') || undefined 
-				}),
-			});
+			updateProgress('connecting', 'Reading your original tweet content...');
 
-			const reader = response.body.getReader();
-			const decoder = new TextDecoder();
+			if (creator.trim()) {
+				updateProgress('fetching', 'Looking up your 𝕏 profile...');
 
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
+				const cleanCreator = creator.trim().replace(/^@+/, '');
 
-				const chunk = decoder.decode(value);
-				const lines = chunk.split('\n');
+				try {
+					updateProgress('fetching', 'Fetching your follower count and engagement history...');
 
-				for (const line of lines) {
-					if (line.startsWith('data: ')) {
-						try {
-							const update = JSON.parse(line.slice(6));
-							
-							// Update progress with real-time messages
-							updateProgress(update.step, update.message);
-							
-							// Handle special events
-							if (update.step === 'success' && update.data?.creatorData) {
-								console.log('📊 Real-time creator data:', update.data.creatorData);
-							}
-							
-							if (update.step === 'complete' && update.data) {
-								updateProgress('complete', 'Analysis complete!');
-								setResults(update.data);
+					const creatorResponse = await fetch('/api/analyze', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ content: content.trim(), creator: creator.trim().replace(/^@+/, "") || undefined }),
+					});
 
-								if (update.data.viralProbability >= 70) {
-									setTimeout(() => setShowConfetti(true), 500);
-								}
+					const creatorResult = await creatorResponse.json();
 
-								toast({
-									title: `${update.data.viralProbability}% Viral Potential!`,
-									description: update.data.hasCreatorData
-										? '𝕏 Enhanced with real-time account analytics'
-										: '📊 General content analysis',
-									status: update.data.viralProbability >= 70 ? 'success' : 'info',
-									duration: 5000,
-									isClosable: true,
-								});
-							}
-							
-							if (update.step === 'error') {
-								throw new Error(update.message);
-							}
-							
-							if (update.step === 'warning') {
-								setCreatorError(update.message);
-							}
-							
-						} catch (parseError) {
-							console.warn('Could not parse streaming update:', line);
-						}
+					if (!creatorResult.success) {
+						setCreatorError(creatorResult.error);
+						updateProgress('fetching', 'Creator lookup failed, using general analysis...');
+					} else {
+						updateProgress('fetching', 'Account data retrieved! Enhancing analysis...');
 					}
+				} catch (creatorErr) {
+					setCreatorError(`Failed to lookup 𝕏 account: ${creatorErr.message}`);
+					updateProgress('fetching', 'Account lookup failed, continuing with general analysis...');
 				}
 			}
+
+			updateProgress('analyzing', 'Processing your original tweet with AI...');
+
+			const predictionResponse = await fetch('/api/analyze', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ content: content.trim(), creator: creator.trim().replace(/^@+/, "") || undefined }),
+			});
+
+			updateProgress('analyzing', 'Calculating viral probability for your original tweet...');
+
+			const predictionResult = await predictionResponse.json();
+
+			if (!predictionResult.success) {
+				throw new Error(predictionResult.error);
+			}
+
+			updateProgress('complete', 'Original tweet analysis complete!');
+			setResults(predictionResult);
+
+			if (predictionResult.viralProbability >= 70) {
+				setTimeout(() => setShowConfetti(true), 500);
+			}
+
+			toast({
+				title: `${predictionResult.viralProbability}% Viral Potential!`,
+				description: predictionResult.hasCreatorData
+					? '𝕏 Enhanced with your account analytics'
+					: creatorError
+						? '📊 General analysis (𝕏 lookup failed)'
+						: '📊 General original tweet analysis',
+				status: predictionResult.viralProbability >= 70 ? 'success' : 'info',
+				duration: 5000,
+				isClosable: true,
+			});
 
 		} catch (err) {
 			setError(err.message);

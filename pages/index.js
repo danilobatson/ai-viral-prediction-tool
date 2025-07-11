@@ -2,16 +2,17 @@ import { ChakraProvider, extendTheme } from '@chakra-ui/react';
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 
+
 // Dynamically import the main component
 const ViralPredictor = dynamic(
   () => import('../components/ViralPredictor'),
-  { 
+  {
     ssr: false,
     loading: () => (
-      <div style={{ 
-        minHeight: '100vh', 
-        display: 'flex', 
-        alignItems: 'center', 
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#f7fafc'
       }}>
@@ -49,10 +50,10 @@ export default function Home() {
 
   if (!mounted) {
     return (
-      <div style={{ 
-        minHeight: '100vh', 
-        display: 'flex', 
-        alignItems: 'center', 
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#f7fafc'
       }}>
