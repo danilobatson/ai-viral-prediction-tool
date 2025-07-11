@@ -16,7 +16,8 @@ import {
 	Badge,
 	Progress,
 	Icon,
-	useToast,
+  useToast,
+  Heading
 } from '@chakra-ui/react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';

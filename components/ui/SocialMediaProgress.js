@@ -10,10 +10,10 @@ import {
 } from '@chakra-ui/react';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  FaTwitter, 
-  FaUser, 
-  FaBrain, 
+import {
+  FaTwitter,
+  FaUser,
+  FaBrain,
   FaCheckCircle,
   FaRetweet,
   FaHeart,
@@ -64,7 +64,7 @@ const TwitterProgress = ({ currentStep, currentMessage, error }) => {
   // Smooth progress animation to target
   useEffect(() => {
     const targetProgress = currentStepData.progress;
-    
+
     // Don't animate backwards
     if (targetProgress < progress && currentStep !== 'error') {
       return;
@@ -79,7 +79,7 @@ const TwitterProgress = ({ currentStep, currentMessage, error }) => {
         }
         return current + (diff * 0.1); // Smooth easing
       });
-      
+
       if (Math.abs(progress - targetProgress) > 0.1) {
         animationFrame = requestAnimationFrame(animateProgress);
       }
@@ -138,13 +138,13 @@ const TwitterProgress = ({ currentStep, currentMessage, error }) => {
         {/* Header with Real-Time Updates */}
         <HStack spacing={3}>
           <MotionBox
-            animate={{ 
+            animate={{
               rotate: currentStep === 'analyzing' ? 360 : 0,
               scale: currentStep === 'complete' ? [1, 1.2, 1] : 1
             }}
-            transition={{ 
-              duration: currentStep === 'analyzing' ? 2 : 0.5, 
-              repeat: currentStep === 'analyzing' ? Infinity : 0 
+            transition={{
+              duration: currentStep === 'analyzing' ? 2 : 0.5,
+              repeat: currentStep === 'analyzing' ? Infinity : 0
             }}
           >
             <Icon as={currentStepData.icon} color={currentStepData.color} boxSize={6} />
@@ -161,10 +161,10 @@ const TwitterProgress = ({ currentStep, currentMessage, error }) => {
 
         {/* Real-Time Progress Bar */}
         <Box w="full">
-          <Progress 
-            value={progress} 
-            colorScheme="blue" 
-            borderRadius="full" 
+          <Progress
+            value={progress}
+            colorScheme="blue"
+            borderRadius="full"
             size="lg"
             bg="gray.100"
             transition="all 0.3s ease-out"
@@ -184,7 +184,7 @@ const TwitterProgress = ({ currentStep, currentMessage, error }) => {
           {Object.entries(stepConfig).slice(0, -2).map(([stepKey, stepData], index) => {
             const isActive = stepKey === currentStep;
             const isCompleted = stepConfig[currentStep]?.progress > stepData.progress;
-            
+
             return (
               <VStack key={stepKey} spacing={1} align="center">
                 <Box
@@ -215,28 +215,28 @@ const TwitterProgress = ({ currentStep, currentMessage, error }) => {
 
         {/* Live Status Updates */}
         <HStack spacing={2} justify="center">
-          <Badge 
-            colorScheme={currentStep === 'connecting' || currentStep === 'analyzing' ? 'blue' : 'gray'} 
-            display="flex" 
-            alignItems="center" 
+          <Badge
+            colorScheme={currentStep === 'connecting' || currentStep === 'analyzing' ? 'blue' : 'gray'}
+            display="flex"
+            alignItems="center"
             gap={1}
           >
             <Icon as={FaTwitter} boxSize={3} />
             Twitter
           </Badge>
-          <Badge 
-            colorScheme={currentStep === 'analyzing' ? 'green' : 'gray'} 
-            display="flex" 
-            alignItems="center" 
+          <Badge
+            colorScheme={currentStep === 'analyzing' ? 'green' : 'gray'}
+            display="flex"
+            alignItems="center"
             gap={1}
           >
             <Icon as={FaRetweet} boxSize={3} />
             Retweets
           </Badge>
-          <Badge 
-            colorScheme={currentStep === 'analyzing' ? 'red' : 'gray'} 
-            display="flex" 
-            alignItems="center" 
+          <Badge
+            colorScheme={currentStep === 'analyzing' ? 'red' : 'gray'}
+            display="flex"
+            alignItems="center"
             gap={1}
           >
             <Icon as={FaHeart} boxSize={3} />
@@ -253,7 +253,7 @@ const TwitterProgress = ({ currentStep, currentMessage, error }) => {
             transition={{ duration: 0.3 }}
           >
             <Text fontSize="sm" color="blue.600" textAlign="center" fontStyle="italic">
-              "{currentMessage}"
+              &quot;{currentMessage}&quot;
             </Text>
           </MotionBox>
         )}

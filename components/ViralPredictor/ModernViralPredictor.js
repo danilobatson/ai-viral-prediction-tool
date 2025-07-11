@@ -198,7 +198,7 @@ export default function ModernViralPredictor() {
 									<Box>
 										<Text fontWeight='bold'>Pro Tip</Text>
 										<Text fontSize='sm'>
-											Add a creator handle (like "elonmusk") to get predictions
+											Add a creator handle (like &quot;elonmusk&quot;) to get predictions
 											enhanced with their real follower data and engagement
 											patterns.
 										</Text>

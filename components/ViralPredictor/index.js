@@ -1,31 +1,32 @@
 import {
+	Box,
 	VStack,
 	HStack,
 	Text,
 	Textarea,
+	Input,
 	Button,
-	Box,
+	Progress,
+	Badge,
+	useToast,
 	SimpleGrid,
+	Icon,
+	Divider,
 	Stat,
 	StatLabel,
 	StatNumber,
 	StatHelpText,
-	Badge,
-	Icon,
-	useToast,
-	Input,
-	Card,
-	CardBody,
-	CardHeader,
-	Heading,
-	Wrap,
-	WrapItem,
 	Container,
+	Heading,
+	Card,
 	Alert,
 	AlertIcon,
 	AlertDescription,
+	CardBody,
+	CardHeader,
+	Wrap,
+	WrapItem,
 	Link,
-	Divider,
 } from '@chakra-ui/react';
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
@@ -67,7 +68,7 @@ export default function ViralPredictor() {
 	const scrollToPredictor = () => {
 		predictorRef.current?.scrollIntoView({
 			behavior: 'smooth',
-			block: 'start'
+			block: 'start',
 		});
 	};
 
@@ -77,7 +78,7 @@ export default function ViralPredictor() {
 		setProgressMessage(message);
 	};
 
-			const handlePredict = async () => {
+	const handlePredict = async () => {
 		if (!content.trim()) {
 			toast({
 				title: 'Tweet Required',
@@ -96,39 +97,52 @@ export default function ViralPredictor() {
 		setShowConfetti(false);
 
 		try {
-			// Use streaming endpoint for real-time updates
+			// Start the streaming request
 			const response = await fetch('/api/analyze-stream', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ 
-					content: content.trim(), 
-					creator: creator.trim().replace(/^@+/, '') || undefined 
+				body: JSON.stringify({
+					content: content.trim(),
+					creator: creator.trim().replace(/^@+/, '') || undefined,
 				}),
 			});
 
+			if (!response.ok) {
+				throw new Error('Failed to start analysis');
+			}
+
+			// Use proper streaming with EventSource-like behavior
 			const reader = response.body.getReader();
 			const decoder = new TextDecoder();
+			let buffer = '';
 
 			while (true) {
 				const { done, value } = await reader.read();
 				if (done) break;
 
-				const chunk = decoder.decode(value);
-				const lines = chunk.split('\n');
+				buffer += decoder.decode(value, { stream: true });
+				const lines = buffer.split('\n');
+
+				// Keep the last incomplete line in buffer
+				buffer = lines.pop() || '';
 
 				for (const line of lines) {
 					if (line.startsWith('data: ')) {
 						try {
 							const update = JSON.parse(line.slice(6));
-							
+
 							// Update progress with real-time messages
 							updateProgress(update.step, update.message);
-							
+							console.log('📡 Streaming update:', update.step, update.message);
+
 							// Handle special events
 							if (update.step === 'success' && update.data?.creatorData) {
-								console.log('📊 Real-time creator data:', update.data.creatorData);
+								console.log(
+									'📊 Real-time creator data:',
+									update.data.creatorData
+								);
 							}
-							
+
 							if (update.step === 'complete' && update.data) {
 								updateProgress('complete', 'Analysis complete!');
 								setResults(update.data);
@@ -142,27 +156,33 @@ export default function ViralPredictor() {
 									description: update.data.hasCreatorData
 										? '𝕏 Enhanced with real-time account analytics'
 										: '📊 General content analysis',
-									status: update.data.viralProbability >= 70 ? 'success' : 'info',
+									status:
+										update.data.viralProbability >= 70 ? 'success' : 'info',
 									duration: 5000,
 									isClosable: true,
 								});
+
+								// Exit streaming loop
+								reader.cancel();
+								return;
 							}
-							
+
 							if (update.step === 'error') {
 								throw new Error(update.message);
 							}
-							
+
 							if (update.step === 'warning') {
 								setCreatorError(update.message);
 							}
-							
 						} catch (parseError) {
 							console.warn('Could not parse streaming update:', line);
 						}
 					}
 				}
-			}
 
+				// Force UI update by adding small delay
+				await new Promise((resolve) => setTimeout(resolve, 50));
+			}
 		} catch (err) {
 			setError(err.message);
 			updateProgress('error', err.message);
@@ -180,11 +200,16 @@ export default function ViralPredictor() {
 
 	const getViralCategoryColor = (category) => {
 		switch (category) {
-			case 'Ultra High': return 'red'
-			case 'High': return 'orange'
-			case 'Moderate': return 'yellow'
-			case 'Low': return 'gray'
-			default: return 'gray'
+			case 'Ultra High':
+				return 'red';
+			case 'High':
+				return 'orange';
+			case 'Moderate':
+				return 'yellow';
+			case 'Low':
+				return 'gray';
+			default:
+				return 'gray';
 		}
 	};
 
@@ -201,30 +226,36 @@ export default function ViralPredictor() {
 	};
 
 	return (
-		<Box minH="100vh" bg="gray.50">
-			<ConfettiEffect trigger={showConfetti} viralProbability={results?.viralProbability} />
+		<Box minH='100vh' bg='gray.50'>
+			<ConfettiEffect
+				trigger={showConfetti}
+				viralProbability={results?.viralProbability}
+			/>
 
 			{/* Modern Hero Section */}
 			<ModernHero onScrollToPredictor={scrollToPredictor} />
 
 			{/* Main Content */}
-			<Container maxW="6xl" py={20} ref={predictorRef}>
-				<VStack spacing={12} align="stretch">
+			<Container maxW='6xl' py={20} ref={predictorRef}>
+				<VStack spacing={12} align='stretch'>
 					{/* Input Section */}
 					<MotionBox
 						initial={{ opacity: 0, y: 50 }}
 						whileInView={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.8 }}
-						viewport={{ once: true }}
-					>
+						viewport={{ once: true }}>
 						<GlassCard p={8}>
 							<VStack spacing={6}>
-								<VStack spacing={2} textAlign="center">
-									<Heading size="lg" bgGradient="linear(to-r, gray.700, black)" bgClip="text">
+								<VStack spacing={2} textAlign='center'>
+									<Heading
+										size='lg'
+										bgGradient='linear(to-r, gray.700, black)'
+										bgClip='text'>
 										𝕏 Analyze Your Original Tweet
 									</Heading>
-									<Text color="gray.600">
-										Paste your original tweet content and get instant viral predictions. Retweets not supported.
+									<Text color='gray.600'>
+										Paste your original tweet content and get instant viral
+										predictions. Retweets not supported.
 									</Text>
 								</VStack>
 
@@ -240,61 +271,61 @@ The institutional adoption we've been waiting for is finally here. MicroStrategy
 This is just the beginning of the next bull run. 📈
 
 #Bitcoin #BTC #CryptoBull #ToTheMoon"
-									size="lg"
-									minH="200px"
-									resize="vertical"
-									bg="white"
-									border="2px solid"
-									borderColor="transparent"
+									size='lg'
+									minH='200px'
+									resize='vertical'
+									bg='white'
+									border='2px solid'
+									borderColor='transparent'
 									_focus={{
-										borderColor: "gray.700",
-										boxShadow: "0 0 0 1px gray.700",
+										borderColor: 'gray.700',
+										boxShadow: '0 0 0 1px gray.700',
 									}}
-									borderRadius="xl"
+									borderRadius='xl'
 								/>
 
-								<HStack w="full" spacing={4}>
+								<HStack w='full' spacing={4}>
 									<Input
 										value={creator}
 										onChange={(e) => setCreator(e.target.value)}
-										placeholder="Your 𝕏 handle: username (no @ needed)"
-										size="lg"
+										placeholder='Your 𝕏 handle: username (no @ needed)'
+										size='lg'
 										flex={1}
-										bg="white"
-										border="2px solid"
-										borderColor="transparent"
+										bg='white'
+										border='2px solid'
+										borderColor='transparent'
 										_focus={{
-											borderColor: "gray.700",
-											boxShadow: "0 0 0 1px gray.700",
+											borderColor: 'gray.700',
+											boxShadow: '0 0 0 1px gray.700',
 										}}
-										borderRadius="xl"
+										borderRadius='xl'
 									/>
 									<Button
-										colorScheme="gray"
+										colorScheme='gray'
 										onClick={handlePredict}
 										isLoading={loading}
-										loadingText="Analyzing..."
-										size="lg"
-										minW="200px"
-										borderRadius="xl"
-										bg="black"
-										color="white"
+										loadingText='Analyzing...'
+										size='lg'
+										minW='200px'
+										borderRadius='xl'
+										bg='black'
+										color='white'
 										_hover={{
-											bg: "gray.800",
-											transform: "translateY(-2px)",
-											boxShadow: "xl",
+											bg: 'gray.800',
+											transform: 'translateY(-2px)',
+											boxShadow: 'xl',
 										}}
 										_active={{
-											transform: "translateY(0px)",
-										}}
-									>
+											transform: 'translateY(0px)',
+										}}>
 										𝕏 Predict Viral Potential
 									</Button>
 								</HStack>
 
 								{creator.trim() && (
-									<Text fontSize="sm" color="gray.500">
-										Will analyze: @{cleanHandle(creator)}'s engagement patterns
+									<Text fontSize='sm' color='gray.500'>
+										Will analyze: @{cleanHandle(creator)}&apos;s engagement
+										patterns
 									</Text>
 								)}
 							</VStack>
@@ -306,8 +337,7 @@ This is just the beginning of the next bull run. 📈
 						<MotionBox
 							initial={{ opacity: 0, scale: 0.9 }}
 							animate={{ opacity: 1, scale: 1 }}
-							transition={{ duration: 0.3 }}
-						>
+							transition={{ duration: 0.3 }}>
 							<TwitterProgress
 								currentStep={progressStep}
 								currentMessage={progressMessage}
@@ -321,17 +351,15 @@ This is just the beginning of the next bull run. 📈
 						<MotionBox
 							initial={{ opacity: 0, scale: 0.9 }}
 							animate={{ opacity: 1, scale: 1 }}
-							transition={{ duration: 0.3 }}
-						>
-							<Alert status="warning" borderRadius="lg">
+							transition={{ duration: 0.3 }}>
+							<Alert status='warning' borderRadius='lg'>
 								<AlertIcon />
 								<Box>
-									<Text fontWeight="bold">𝕏 Account Lookup Failed</Text>
-									<AlertDescription>
-										{creatorError}
-									</AlertDescription>
-									<Text fontSize="sm" mt={2} color="gray.600">
-										Don't worry! We'll still analyze your original tweet content with general patterns.
+									<Text fontWeight='bold'>𝕏 Account Lookup Failed</Text>
+									<AlertDescription>{creatorError}</AlertDescription>
+									<Text fontSize='sm' mt={2} color='gray.600'>
+										Don&apos;t worry! We&apos;ll still analyze your original
+										tweet content with general patterns.
 									</Text>
 								</Box>
 							</Alert>
@@ -343,11 +371,10 @@ This is just the beginning of the next bull run. 📈
 						<MotionBox
 							initial={{ opacity: 0, y: 50 }}
 							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.8 }}
-						>
+							transition={{ duration: 0.8 }}>
 							<VStack spacing={8}>
 								{/* Viral Probability Meter */}
-								<GlassCard p={8} textAlign="center">
+								<GlassCard p={8} textAlign='center'>
 									<VStack spacing={6}>
 										<ViralMeter
 											probability={results.viralProbability}
@@ -357,26 +384,26 @@ This is just the beginning of the next bull run. 📈
 
 										<VStack spacing={2}>
 											<HStack spacing={2}>
-												<Text fontSize="2xl">
+												<Text fontSize='2xl'>
 													{getTwitterEmoji(results.viralProbability)}
 												</Text>
 												<Badge
-													colorScheme={getViralCategoryColor(results.viralCategory)}
-													fontSize="lg"
+													colorScheme={getViralCategoryColor(
+														results.viralCategory
+													)}
+													fontSize='lg'
 													px={4}
 													py={2}
-													borderRadius="full"
-												>
+													borderRadius='full'>
 													{results.viralCategory} Viral Potential
 												</Badge>
 											</HStack>
-											<Text color="gray.600">
+											<Text color='gray.600'>
 												{results.hasCreatorData
 													? '✅ Personalized for your 𝕏 account'
 													: creatorError
-														? '📊 General analysis (couldn\'t get account data)'
-														: '📊 General original tweet analysis'
-												}
+													? "📊 General analysis (couldn't get account data)"
+													: '📊 General original tweet analysis'}
 											</Text>
 										</VStack>
 									</VStack>
@@ -384,12 +411,12 @@ This is just the beginning of the next bull run. 📈
 
 								{/* Expected 𝕏 Engagement */}
 								{results.hasCreatorData && results.creatorData && (
-									<Card bg="white" borderRadius="xl" boxShadow="lg">
+									<Card bg='white' borderRadius='xl' boxShadow='lg'>
 										<CardHeader pb={2}>
 											<HStack spacing={3}>
-												<Icon as={FaTwitter} color="black" boxSize={5} />
-												<Heading size="md">Your Expected 𝕏 Engagement</Heading>
-												<Badge colorScheme="blue" fontSize="xs">
+												<Icon as={FaTwitter} color='black' boxSize={5} />
+												<Heading size='md'>Your Expected 𝕏 Engagement</Heading>
+												<Badge colorScheme='blue' fontSize='xs'>
 													Powered by LunarCrush MCP
 												</Badge>
 											</HStack>
@@ -401,41 +428,47 @@ This is just the beginning of the next bull run. 📈
 														label: '𝕏 Handle',
 														value: `@${results.creatorData.handle}`,
 														icon: FaTwitter,
-														color: 'gray'
+														color: 'gray',
 													},
 													{
 														label: 'Followers',
 														value: formatNumber(results.creatorData.followers),
 														icon: FaHeart,
-														color: 'red'
+														color: 'red',
 													},
 													{
 														label: 'Avg Engagement',
-														value: formatNumber(results.creatorData.engagements),
+														value: formatNumber(
+															results.creatorData.engagements
+														),
 														icon: FaReply,
-														color: 'green'
+														color: 'green',
 													},
 													{
 														label: 'This Tweet',
 														value: formatNumber(results.expectedEngagement),
 														icon: FaShare,
-														color: 'purple'
+														color: 'purple',
 													},
 												].map((stat, index) => (
 													<MotionBox
 														key={stat.label}
 														initial={{ opacity: 0, y: 20 }}
 														animate={{ opacity: 1, y: 0 }}
-														transition={{ duration: 0.5, delay: index * 0.1 }}
-													>
-														<Stat textAlign="center">
-															<HStack justify="center" mb={2}>
-																<Icon as={stat.icon} color={`${stat.color}.500`} />
+														transition={{ duration: 0.5, delay: index * 0.1 }}>
+														<Stat textAlign='center'>
+															<HStack justify='center' mb={2}>
+																<Icon
+																	as={stat.icon}
+																	color={`${stat.color}.500`}
+																/>
 															</HStack>
-															<StatNumber fontSize="xl" color={`${stat.color}.500`}>
+															<StatNumber
+																fontSize='xl'
+																color={`${stat.color}.500`}>
 																{stat.value}
 															</StatNumber>
-															<StatLabel fontSize="sm" color="gray.600">
+															<StatLabel fontSize='sm' color='gray.600'>
 																{stat.label}
 															</StatLabel>
 														</Stat>
@@ -448,58 +481,57 @@ This is just the beginning of the next bull run. 📈
 
 								{/* 𝕏 Psychology Analysis */}
 								{results.psychologyScore && (
-									<Card bg="white" borderRadius="xl" boxShadow="lg">
+									<Card bg='white' borderRadius='xl' boxShadow='lg'>
 										<CardHeader pb={2}>
 											<HStack spacing={3}>
-												<Icon as={FaBrain} color="purple.500" boxSize={5} />
-												<Heading size="md">Why People Will Engage on 𝕏</Heading>
+												<Icon as={FaBrain} color='purple.500' boxSize={5} />
+												<Heading size='md'>Why People Will Engage on 𝕏</Heading>
 											</HStack>
 										</CardHeader>
 										<CardBody>
 											<SimpleGrid columns={{ base: 2, md: 4 }} spacing={6}>
 												{[
 													{
-														key: 'emotional',
+														key: 'emotional_appeal',
 														label: 'Emotional Impact',
 														desc: 'Makes people feel something',
-														emoji: '😍'
+														emoji: '😍',
 													},
 													{
-														key: 'socialCurrency',
+														key: 'shareability',
 														label: 'Share Value',
 														desc: 'Worth sharing to followers',
-														emoji: '🔄'
+														emoji: '🔄',
 													},
 													{
 														key: 'practicalValue',
 														label: 'Useful Content',
 														desc: 'Helpful or informative',
-														emoji: '💡'
+														emoji: '💡',
 													},
 													{
 														key: 'story',
 														label: 'Story Appeal',
 														desc: 'Has narrative hook',
-														emoji: '📖'
+														emoji: '📖',
 													},
 												].map((item, index) => (
 													<MotionBox
 														key={item.key}
 														initial={{ opacity: 0, scale: 0.8 }}
 														animate={{ opacity: 1, scale: 1 }}
-														transition={{ duration: 0.5, delay: index * 0.1 }}
-													>
-														<Stat textAlign="center">
-															<Text fontSize="2xl" mb={2}>
+														transition={{ duration: 0.5, delay: index * 0.1 }}>
+														<Stat textAlign='center'>
+															<Text fontSize='2xl' mb={2}>
 																{item.emoji}
 															</Text>
-															<StatNumber fontSize="3xl" color="purple.500">
+															<StatNumber fontSize='3xl' color='purple.500'>
 																{results.psychologyScore[item.key]}%
 															</StatNumber>
-															<StatLabel fontWeight="bold">
+															<StatLabel fontWeight='bold'>
 																{item.label}
 															</StatLabel>
-															<StatHelpText fontSize="xs">
+															<StatHelpText fontSize='xs'>
 																{item.desc}
 															</StatHelpText>
 														</Stat>
@@ -511,99 +543,135 @@ This is just the beginning of the next bull run. 📈
 								)}
 
 								{/* 𝕏 Tips & Hashtags */}
-								<SimpleGrid columns={{ base: 1, lg: 2 }} spacing={8} w="full">
+								<SimpleGrid columns={{ base: 1, lg: 2 }} spacing={8} w='full'>
 									{/* 𝕏 Optimization Tips */}
-									{results.recommendations && results.recommendations.length > 0 && (
-										<Card bg="white" borderRadius="xl" boxShadow="lg">
-											<CardHeader pb={2}>
-												<HStack spacing={3}>
-													<Icon as={FaLightbulb} color="orange.500" boxSize={5} />
-													<Heading size="md">How to Get More Engagement</Heading>
-												</HStack>
-											</CardHeader>
-											<CardBody>
-												<VStack align="start" spacing={4}>
-													{results.recommendations.map((rec, index) => (
-														<MotionBox
-															key={index}
-															initial={{ opacity: 0, x: -20 }}
-															animate={{ opacity: 1, x: 0 }}
-															transition={{ duration: 0.5, delay: index * 0.1 }}
-														>
-															<HStack align="start" spacing={3}>
-																<Badge colorScheme="orange" borderRadius="full" minW="24px" h="24px" display="flex" alignItems="center" justifyContent="center">
-																	{index + 1}
-																</Badge>
-																<Text fontSize="sm">{rec}</Text>
-															</HStack>
-														</MotionBox>
-													))}
-												</VStack>
-											</CardBody>
-										</Card>
-									)}
-
-									{/* Hashtags & Best Times */}
-									<VStack spacing={8}>
-										{/* Trending Hashtags */}
-										{results.optimizedHashtags && results.optimizedHashtags.length > 0 && (
-											<Card bg="white" borderRadius="xl" boxShadow="lg" w="full">
+									{results.recommendations &&
+										results.recommendations.length > 0 && (
+											<Card bg='white' borderRadius='xl' boxShadow='lg'>
 												<CardHeader pb={2}>
 													<HStack spacing={3}>
-														<Icon as={FaHashtag} color="blue.500" boxSize={5} />
-														<Heading size="md">Trending Hashtags</Heading>
+														<Icon
+															as={FaLightbulb}
+															color='orange.500'
+															boxSize={5}
+														/>
+														<Heading size='md'>
+															How to Get More Engagement
+														</Heading>
 													</HStack>
 												</CardHeader>
 												<CardBody>
-													<Wrap>
-														{results.optimizedHashtags.map((tag, index) => (
-															<WrapItem key={index}>
-																<MotionBox
-																	initial={{ opacity: 0, scale: 0.8 }}
-																	animate={{ opacity: 1, scale: 1 }}
-																	transition={{ duration: 0.3, delay: index * 0.05 }}
-																	whileHover={{ scale: 1.05 }}
-																>
+													<VStack align='start' spacing={4}>
+														{results.recommendations.map((rec, index) => (
+															<MotionBox
+																key={index}
+																initial={{ opacity: 0, x: -20 }}
+																animate={{ opacity: 1, x: 0 }}
+																transition={{
+																	duration: 0.5,
+																	delay: index * 0.1,
+																}}>
+																<HStack align='start' spacing={3}>
 																	<Badge
-																		colorScheme="blue"
-																		variant="outline"
-																		fontSize="sm"
-																		px={3}
-																		py={1}
-																		borderRadius="full"
-																	>
-																		{tag}
+																		colorScheme='orange'
+																		borderRadius='full'
+																		minW='24px'
+																		h='24px'
+																		display='flex'
+																		alignItems='center'
+																		justifyContent='center'>
+																		{index + 1}
 																	</Badge>
-																</MotionBox>
-															</WrapItem>
+																	<Text fontSize='sm'>{rec}</Text>
+																</HStack>
+															</MotionBox>
 														))}
-													</Wrap>
+													</VStack>
 												</CardBody>
 											</Card>
 										)}
 
+									{/* Hashtags & Best Times */}
+									<VStack spacing={8}>
+										{/* Trending Hashtags */}
+										{results.optimizedHashtags &&
+											results.optimizedHashtags.length > 0 && (
+												<Card
+													bg='white'
+													borderRadius='xl'
+													boxShadow='lg'
+													w='full'>
+													<CardHeader pb={2}>
+														<HStack spacing={3}>
+															<Icon
+																as={FaHashtag}
+																color='blue.500'
+																boxSize={5}
+															/>
+															<Heading size='md'>Trending Hashtags</Heading>
+														</HStack>
+													</CardHeader>
+													<CardBody>
+														<Wrap>
+															{results.optimizedHashtags.map((tag, index) => (
+																<WrapItem key={index}>
+																	<MotionBox
+																		initial={{ opacity: 0, scale: 0.8 }}
+																		animate={{ opacity: 1, scale: 1 }}
+																		transition={{
+																			duration: 0.3,
+																			delay: index * 0.05,
+																		}}
+																		whileHover={{ scale: 1.05 }}>
+																		<Badge
+																			colorScheme='blue'
+																			variant='outline'
+																			fontSize='sm'
+																			px={3}
+																			py={1}
+																			borderRadius='full'>
+																			{tag}
+																		</Badge>
+																	</MotionBox>
+																</WrapItem>
+															))}
+														</Wrap>
+													</CardBody>
+												</Card>
+											)}
+
 										{/* Best Tweet Times */}
 										{results.optimalTiming && (
-											<Card bg="white" borderRadius="xl" boxShadow="lg" w="full">
+											<Card
+												bg='white'
+												borderRadius='xl'
+												boxShadow='lg'
+												w='full'>
 												<CardHeader pb={2}>
 													<HStack spacing={3}>
-														<Icon as={FaClock} color="green.500" boxSize={5} />
-														<Heading size="md">Best Times to Tweet</Heading>
+														<Icon as={FaClock} color='green.500' boxSize={5} />
+														<Heading size='md'>Best Times to Tweet</Heading>
 													</HStack>
 												</CardHeader>
 												<CardBody>
-													<VStack align="start" spacing={3}>
+													<VStack align='start' spacing={3}>
 														<HStack>
-															<Text fontWeight="bold" color="green.500">📅 Best Days:</Text>
-															<Text>{results.optimalTiming.bestDays}</Text>
+															<Text fontWeight='bold' color='green.500'>
+																📅 Best Days:
+															</Text>
+															<Text>Tuesday - Thursday</Text>
 														</HStack>
 														<HStack>
-															<Text fontWeight="bold" color="green.500">🕐 Peak Hours:</Text>
-															<Text>{results.optimalTiming.bestTime}</Text>
+															<Text fontWeight='bold' color='green.500'>
+																🕐 Peak Hours:
+															</Text>
+															<Text>9AM - 12PM</Text>
 														</HStack>
 														<HStack>
-															<Text fontWeight="bold" color="green.500">🌍 Time Zone:</Text>
-															<Text>{results.optimalTiming.timezone}</Text>
+															<Text fontWeight='bold' color='green.500'>
+																🌍 Time Zone:
+															</Text>
+															<Text>EST</Text>
 														</HStack>
 													</VStack>
 												</CardBody>
@@ -613,34 +681,37 @@ This is just the beginning of the next bull run. 📈
 								</SimpleGrid>
 
 								{/* LunarCrush MCP Branding */}
-								<Card bg="gray.50" borderRadius="xl" boxShadow="sm">
+								<Card bg='gray.50' borderRadius='xl' boxShadow='sm'>
 									<CardBody>
-										<VStack spacing={4} textAlign="center">
+										<VStack spacing={4} textAlign='center'>
 											<Divider />
 											<HStack spacing={3}>
-												<Icon as={FaDatabase} color="blue.500" boxSize={5} />
-												<VStack spacing={1} align="start">
-													<Text fontWeight="bold" color="gray.800">
+												<Icon as={FaDatabase} color='blue.500' boxSize={5} />
+												<VStack spacing={1} align='start' alignItems='center'>
+													<Text
+														fontWeight='bold'
+														color='gray.800'
+														>
 														Powered by LunarCrush MCP
 													</Text>
-													<Text fontSize="sm" color="gray.600">
+													<Text fontSize='sm' color='gray.600'>
 														Real-time social data via Model Context Protocol
 													</Text>
+													<Link
+														href='https://lunarcrush.com/developers/api/endpoints'
+														isExternal
+														color='blue.500'
+														fontSize='sm'
+														fontWeight='medium'
+														display='flex'
+														alignItems='center'
+														gap={1}>
+														Learn More
+														<Icon as={FaExternalLinkAlt} boxSize={3} />
+													</Link>
 												</VStack>
-												<Link
-													href="https://lunarcrush.com/developers/api/endpoints"
-													isExternal
-													color="blue.500"
-													fontSize="sm"
-													fontWeight="medium"
-													display="flex"
-													alignItems="center"
-													gap={1}
-												>
-													Learn More <Icon as={FaExternalLinkAlt} boxSize={3} />
-												</Link>
 											</HStack>
-											<HStack spacing={6} fontSize="xs" color="gray.500">
+											<HStack spacing={6} fontSize='xs' color='gray.500'>
 												<Text>✅ Real Creator Data</Text>
 												<Text>🔄 Live Social Metrics</Text>
 												<Text>🤖 AI-Enhanced Analysis</Text>

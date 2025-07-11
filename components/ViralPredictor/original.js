@@ -531,7 +531,7 @@ const ViralPredictor = () => {
 								) : (
 									<Box textAlign='center' py={8}>
 										<Text color='gray.500'>
-											Click "Analyze Viral Potential" to see your results and
+											Click &quot;Analyze Viral Potential&quot; to see your results and
 											optimization tips
 										</Text>
 									</Box>
