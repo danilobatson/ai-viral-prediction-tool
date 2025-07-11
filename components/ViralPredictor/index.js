@@ -426,7 +426,7 @@ This is just the beginning of the next bull run. 📈
 												{[
 													{
 														label: '𝕏 Handle',
-														value: `@${results.creatorData.handle}`,
+														value: `${results.creatorData.handle}`,
 														icon: FaTwitter,
 														color: 'gray',
 													},
